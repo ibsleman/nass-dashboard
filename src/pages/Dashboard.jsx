@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Sidebar, { CATEGORIES } from '../components/Sidebar'
 import FilterBar from '../components/FilterBar'
 import TemplateCard from '../components/TemplateCard'
@@ -15,6 +15,7 @@ import {
 
 export default function Dashboard() {
   const { isDark, toggleTheme } = useTheme()
+
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key)
   const [templates, setTemplates]           = useState([])
   const [loading, setLoading]               = useState(false)
@@ -22,19 +23,31 @@ export default function Dashboard() {
   const [premiumFilter, setPremiumFilter]   = useState('all')
   const [counts, setCounts]                 = useState({})
 
-  // Modal
-  const [modalOpen, setModalOpen]     = useState(false)
-  const [editTemplate, setEditTemplate] = useState(null)
+  // Mobile dropdown
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const dropdownRef                         = useRef(null)
 
-  // Delete
+  // Modal / Delete
+  const [modalOpen, setModalOpen]       = useState(false)
+  const [editTemplate, setEditTemplate] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting]         = useState(false)
 
   // Toast
   const [toast, setToast] = useState(null)
 
-  // ─── تحميل القوالب ──────────────────────────────────────────────────────────
+  // ─── إغلاق الـ dropdown عند الضغط خارجه ──────────────────────────────────
+  useEffect(() => {
+    function handleOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setMobileMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [])
 
+  // ─── تحميل القوالب ──────────────────────────────────────────────────────────
   const loadTemplates = useCallback(async (category) => {
     setLoading(true)
     try {
@@ -47,7 +60,6 @@ export default function Dashboard() {
     }
   }, [])
 
-  // عداد كل الأقسام عند أول تحميل
   useEffect(() => {
     ;(async () => {
       const result = {}
@@ -56,9 +68,7 @@ export default function Dashboard() {
           try {
             const data = await fetchTemplates(cat.key)
             result[cat.key] = data.length
-          } catch {
-            result[cat.key] = 0
-          }
+          } catch { result[cat.key] = 0 }
         })
       )
       setCounts(result)
@@ -72,14 +82,12 @@ export default function Dashboard() {
   }, [activeCategory, loadTemplates])
 
   // ─── Toast ──────────────────────────────────────────────────────────────────
-
   function showToast(message, type = 'success') {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3500)
   }
 
   // ─── فلترة ──────────────────────────────────────────────────────────────────
-
   const filtered = templates.filter((t) => {
     if (typeFilter !== 'all' && t.type !== typeFilter) return false
     if (premiumFilter === 'free'    &&  t.is_premium)  return false
@@ -88,7 +96,6 @@ export default function Dashboard() {
   })
 
   // ─── CRUD ───────────────────────────────────────────────────────────────────
-
   const handleSave = async (payload, id) => {
     if (id) {
       const updated = await updateTemplate(id, payload)
@@ -114,18 +121,13 @@ export default function Dashboard() {
           return parts[1] ?? null
         } catch { return null }
       }
-      const imgPath = extractPath(deleteTarget.image_url)
-      const vidPath = extractPath(deleteTarget.video_url)
       await Promise.all([
-        imgPath ? deleteFile(imgPath) : Promise.resolve(),
-        vidPath ? deleteFile(vidPath) : Promise.resolve(),
+        extractPath(deleteTarget.image_url) ? deleteFile(extractPath(deleteTarget.image_url)) : Promise.resolve(),
+        extractPath(deleteTarget.video_url) ? deleteFile(extractPath(deleteTarget.video_url)) : Promise.resolve(),
       ])
       await deleteTemplate(deleteTarget.id)
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id))
-      setCounts((prev) => ({
-        ...prev,
-        [activeCategory]: Math.max(0, (prev[activeCategory] ?? 1) - 1),
-      }))
+      setCounts((prev) => ({ ...prev, [activeCategory]: Math.max(0, (prev[activeCategory] ?? 1) - 1) }))
       showToast('تم حذف القالب بنجاح')
     } catch (err) {
       showToast('خطأ في الحذف: ' + err.message, 'error')
@@ -138,40 +140,95 @@ export default function Dashboard() {
   const activeCat = CATEGORIES.find((c) => c.key === activeCategory)
 
   // ────────────────────────────────────────────────────────────────────────────
-
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-950 overflow-hidden">
 
-      {/* ══════════ Top Header — يمتد على كامل العرض ══════════ */}
-      <header className="flex-shrink-0 h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm flex items-center px-5 gap-3">
+      {/* ══════════ Top Header ══════════ */}
+      <header className="flex-shrink-0 h-14 md:h-16 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm flex items-center px-3 md:px-5 gap-2 md:gap-3 relative z-40">
 
-        {/* ① الشعار — أقصى اليمين في RTL (أول عنصر DOM) */}
-        <div className="flex items-center gap-2.5 flex-shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-md">
-            <span className="text-white font-black text-base">N</span>
+        {/* ① الشعار */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="w-8 h-8 md:w-9 md:h-9 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center shadow-md flex-shrink-0">
+            <span className="text-white font-black text-sm md:text-base">N</span>
           </div>
-          <div className="hidden sm:block leading-tight">
+          <div className="hidden md:block leading-tight">
             <p className="text-sm font-bold text-gray-900 dark:text-white">Nass CMS</p>
             <p className="text-[10px] text-gray-400 dark:text-gray-500">إدارة القوالب</p>
           </div>
         </div>
 
-        {/* فاصل */}
-        <div className="w-px h-7 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1" />
+        {/* فاصل — desktop فقط */}
+        <div className="hidden md:block w-px h-7 bg-gray-200 dark:bg-gray-700 flex-shrink-0 mx-1" />
 
-        {/* ② عنوان القسم النشط — يملأ المساحة الوسطى */}
-        <div className="flex-1 flex items-center gap-2 min-w-0">
+        {/* ② mobile: dropdown الأقسام */}
+        <div className="md:hidden relative flex-1 min-w-0" ref={dropdownRef}>
+          <button
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-sm font-bold transition-colors active:bg-gray-200 dark:active:bg-gray-700"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex-shrink-0 text-base">{activeCat?.emoji}</span>
+              <span className="truncate">{activeCat?.label}</span>
+              {counts[activeCat?.key] !== undefined && (
+                <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 font-bold tabular-nums">
+                  {counts[activeCat?.key]}
+                </span>
+              )}
+            </div>
+            <svg
+              className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform duration-200 ${mobileMenuOpen ? 'rotate-180' : ''}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* قائمة الأقسام المنسدلة */}
+          {mobileMenuOpen && (
+            <div className="absolute top-full mt-2 inset-x-0 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-50 py-1.5">
+              {CATEGORIES.map((cat) => {
+                const isActive = activeCategory === cat.key
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => { setActiveCategory(cat.key); setMobileMenuOpen(false) }}
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:bg-gray-100 dark:active:bg-gray-750'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-base">{cat.emoji}</span>
+                      <span>{cat.label}</span>
+                    </div>
+                    {counts[cat.key] !== undefined && (
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold tabular-nums ${
+                        isActive
+                          ? 'bg-brand-100 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {counts[cat.key]}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ② desktop: عنوان القسم النشط */}
+        <div className="hidden md:flex flex-1 items-center gap-2 min-w-0">
           <span className="text-xl flex-shrink-0">{activeCat?.emoji}</span>
           <div className="min-w-0">
-            <h2 className="font-bold text-gray-900 dark:text-white truncate leading-tight">
-              {activeCat?.label}
-            </h2>
+            <h2 className="font-bold text-gray-900 dark:text-white truncate leading-tight">{activeCat?.label}</h2>
             <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">{activeCat?.key}</p>
           </div>
         </div>
 
-        {/* ③ الأزرار — أقصى اليسار في RTL (آخر عنصر DOM) */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        {/* ③ الأزرار */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {/* تبديل الثيم */}
           <button
             onClick={toggleTheme}
@@ -191,10 +248,10 @@ export default function Dashboard() {
             )}
           </button>
 
-          {/* زر إضافة قالب */}
+          {/* زر الإضافة */}
           <button
             onClick={() => { setEditTemplate(null); setModalOpen(true) }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-l from-brand-600 to-brand-500 text-white font-semibold shadow-md hover:from-brand-700 hover:to-brand-600 transition-all text-sm"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl bg-gradient-to-l from-brand-600 to-brand-500 text-white font-semibold shadow-md hover:from-brand-700 hover:to-brand-600 active:scale-95 transition-all text-sm"
           >
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -207,16 +264,16 @@ export default function Dashboard() {
       {/* ══════════ Body ══════════ */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* السايدبار — يمين (أول في DOM = يمين في RTL) */}
+        {/* السايدبار — مخفي على الهاتف، يظهر على md+ */}
         <Sidebar
           activeCategory={activeCategory}
           onSelectCategory={setActiveCategory}
           counts={counts}
         />
 
-        {/* المحتوى الرئيسي — يسار */}
+        {/* المحتوى الرئيسي */}
         <main className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="p-6">
+          <div className="p-3 sm:p-4 md:p-6">
 
             <FilterBar
               typeFilter={typeFilter}
@@ -226,9 +283,9 @@ export default function Dashboard() {
               total={filtered.length}
             />
 
-            {/* ─── Grid ─────────────────────────────────────────── */}
+            {/* ─── Grid ─── */}
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse">
                     <div className="aspect-[9/16]" />
@@ -240,34 +297,32 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-28 text-center">
-                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 flex items-center justify-center mb-5 shadow-inner">
-                  <span className="text-4xl">{activeCat?.emoji}</span>
+              <div className="flex flex-col items-center justify-center py-20 md:py-28 text-center px-4">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 flex items-center justify-center mb-4 shadow-inner">
+                  <span className="text-3xl md:text-4xl">{activeCat?.emoji}</span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  لا توجد قوالب
-                </h3>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mb-6 max-w-xs">
+                <h3 className="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 mb-1.5">لا توجد قوالب</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mb-5 max-w-xs">
                   {typeFilter !== 'all' || premiumFilter !== 'all'
-                    ? 'لا توجد قوالب تطابق الفلتر الحالي، جرب تغيير الفلتر'
+                    ? 'لا توجد قوالب تطابق الفلتر الحالي'
                     : `ابدأ بإضافة أول قالب في قسم "${activeCat?.label}"`}
                 </p>
                 {typeFilter === 'all' && premiumFilter === 'all' && (
                   <button
                     onClick={() => { setEditTemplate(null); setModalOpen(true) }}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-l from-brand-600 to-brand-500 text-white text-sm font-semibold hover:from-brand-700 hover:to-brand-600 transition-all shadow-md"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-l from-brand-600 to-brand-500 text-white text-sm font-semibold shadow-md hover:from-brand-700 hover:to-brand-600 transition-all"
                   >
                     إضافة قالب جديد
                   </button>
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
                 {filtered.map((template) => (
                   <TemplateCard
                     key={template.id}
                     template={template}
-                    onEdit={(t)  => { setEditTemplate(t); setModalOpen(true) }}
+                    onEdit={(t)   => { setEditTemplate(t); setModalOpen(true) }}
                     onDelete={(t) => setDeleteTarget(t)}
                   />
                 ))}
@@ -275,7 +330,6 @@ export default function Dashboard() {
             )}
           </div>
         </main>
-
       </div>
 
       {/* ══════════ Modals ══════════ */}
@@ -297,13 +351,11 @@ export default function Dashboard() {
 
       {/* ══════════ Toast ══════════ */}
       {toast && (
-        <div
-          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-5 py-3 rounded-2xl shadow-2xl text-sm font-semibold transition-all ${
-            toast.type === 'error'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
-          }`}
-        >
+        <div className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 md:px-5 py-3 rounded-2xl shadow-2xl text-sm font-semibold whitespace-nowrap ${
+          toast.type === 'error'
+            ? 'bg-red-500 text-white'
+            : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+        }`}>
           {toast.type === 'error' ? (
             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

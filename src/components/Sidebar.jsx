@@ -16,7 +16,7 @@ export default function Sidebar({ activeCategory, onSelectCategory, counts = {} 
   const { logout } = useAuth()
 
   return (
-    <aside className="w-56 flex-shrink-0 flex flex-col bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-sm">
+    <aside className="hidden md:flex w-56 flex-shrink-0 flex-col bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 shadow-sm">
 
       {/* ─── عنوان القسم ─── */}
       <div className="px-4 pt-5 pb-2">

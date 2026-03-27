@@ -1,0 +1,545 @@
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// ── replace with your Supabase credentials ──────────────────────
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+// ── helpers ──────────────────────────────────────────────────────
+const EMPTY_AD = {
+  title: "",
+  image_url: "",
+  video_url: "",
+  action_url: "",
+  contact_label: "تواصل معنا",
+  view_label: "مشاهدة",
+  countdown_secs: 5,
+  show_on_select: true,
+  show_on_save: true,
+  show_on_share: true,
+  priority: 0,
+  is_active: false,
+  start_date: "",
+  end_date: "",
+};
+
+function Toggle({ checked, onChange, disabled }) {
+  return (
+    <button
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      style={{
+        width: 44,
+        height: 24,
+        borderRadius: 12,
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: checked ? "#16a34a" : "#d1d5db",
+        position: "relative",
+        transition: "background .2s",
+        flexShrink: 0,
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: 3,
+          left: checked ? 23 : 3,
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          background: "#fff",
+          transition: "left .2s",
+          boxShadow: "0 1px 3px rgba(0,0,0,.3)",
+        }}
+      />
+    </button>
+  );
+}
+
+function Badge({ children, color = "gray" }) {
+  const colors = {
+    green: { bg: "#dcfce7", text: "#15803d" },
+    red: { bg: "#fee2e2", text: "#b91c1c" },
+    gray: { bg: "#f3f4f6", text: "#6b7280" },
+    blue: { bg: "#dbeafe", text: "#1d4ed8" },
+  };
+  const c = colors[color] || colors.gray;
+  return (
+    <span
+      style={{
+        padding: "2px 10px",
+        borderRadius: 20,
+        fontSize: 12,
+        fontWeight: 600,
+        background: c.bg,
+        color: c.text,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Toast({ msg, type }) {
+  if (!msg) return null;
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 24,
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: type === "error" ? "#ef4444" : "#16a34a",
+        color: "#fff",
+        padding: "10px 20px",
+        borderRadius: 10,
+        fontSize: 14,
+        fontWeight: 500,
+        zIndex: 9999,
+        boxShadow: "0 4px 20px rgba(0,0,0,.2)",
+        animation: "fadeIn .2s ease",
+      }}
+    >
+      {msg}
+    </div>
+  );
+}
+
+// ── main component ───────────────────────────────────────────────
+export default function AdsManager() {
+  const [settings, setSettings] = useState(null);
+  const [ads, setAds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingAd, setEditingAd] = useState(null); // null | EMPTY_AD | existing ad obj
+  const [toast, setToast] = useState({ msg: "", type: "ok" });
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  function showToast(msg, type = "ok") {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "", type: "ok" }), 3000);
+  }
+
+  // ── fetch ───────────────────────────────────────────────────────
+  async function fetchAll() {
+    setLoading(true);
+    const [{ data: s }, { data: a }] = await Promise.all([
+      supabase.from("ads_settings").select("*").single(),
+      supabase.from("custom_ads").select("*").order("priority", { ascending: false }),
+    ]);
+    if (s) setSettings(s);
+    if (a) setAds(a);
+    setLoading(false);
+  }
+
+  useEffect(() => { fetchAll(); }, []);
+
+  // ── save settings ───────────────────────────────────────────────
+  async function saveSettings(patch) {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    const { error } = await supabase
+      .from("ads_settings")
+      .update(patch)
+      .eq("id", 1);
+    if (error) showToast("خطأ في الحفظ", "error");
+    else showToast("تم الحفظ");
+  }
+
+  // ── save ad (insert or update) ──────────────────────────────────
+  async function saveAd() {
+    if (!editingAd.title.trim()) { showToast("اكتب عنوان الإعلان", "error"); return; }
+    if (!editingAd.action_url.trim()) { showToast("أضف رابط الإعلان", "error"); return; }
+    setSaving(true);
+    const payload = { ...editingAd };
+    if (!payload.start_date) payload.start_date = null;
+    if (!payload.end_date) payload.end_date = null;
+    if (!payload.image_url) payload.image_url = null;
+    if (!payload.video_url) payload.video_url = null;
+
+    let error;
+    if (payload.id) {
+      ({ error } = await supabase.from("custom_ads").update(payload).eq("id", payload.id));
+    } else {
+      delete payload.id;
+      ({ error } = await supabase.from("custom_ads").insert(payload));
+    }
+    setSaving(false);
+    if (error) { showToast("خطأ في الحفظ: " + error.message, "error"); return; }
+    showToast(payload.id ? "تم التعديل" : "تم الإضافة");
+    setEditingAd(null);
+    fetchAll();
+  }
+
+  async function toggleAd(ad) {
+    const { error } = await supabase
+      .from("custom_ads")
+      .update({ is_active: !ad.is_active })
+      .eq("id", ad.id);
+    if (!error) setAds(ads.map(a => a.id === ad.id ? { ...a, is_active: !a.is_active } : a));
+    else showToast("خطأ", "error");
+  }
+
+  async function deleteAd(id) {
+    const { error } = await supabase.from("custom_ads").delete().eq("id", id);
+    if (!error) { setAds(ads.filter(a => a.id !== id)); showToast("تم الحذف"); }
+    else showToast("خطأ في الحذف", "error");
+    setConfirmDelete(null);
+  }
+
+  // ── styles ──────────────────────────────────────────────────────
+  const card = {
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: 14,
+    padding: "20px 24px",
+    marginBottom: 16,
+  };
+
+  const row = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  };
+
+  const label = { fontSize: 14, color: "#374151", fontWeight: 500 };
+  const sublabel = { fontSize: 12, color: "#9ca3af", marginTop: 2 };
+
+  const inp = {
+    width: "100%",
+    padding: "9px 12px",
+    border: "1px solid #d1d5db",
+    borderRadius: 8,
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const btn = (variant = "primary") => ({
+    padding: "8px 18px",
+    borderRadius: 8,
+    border: "none",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: 14,
+    background: variant === "primary" ? "#1d4ed8" : variant === "danger" ? "#ef4444" : "#f3f4f6",
+    color: variant === "ghost" ? "#374151" : "#fff",
+  });
+
+  if (loading) return (
+    <div style={{ textAlign: "center", padding: 80, color: "#9ca3af" }}>
+      جارٍ التحميل…
+    </div>
+  );
+
+  // ── ad form modal ───────────────────────────────────────────────
+  if (editingAd) return (
+    <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 16px", direction: "rtl" }}>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}`}</style>
+      <div style={{ ...card, animation: "fadeIn .2s ease" }}>
+        <div style={{ ...row, marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+            {editingAd.id ? "تعديل إعلان" : "إعلان جديد"}
+          </h2>
+          <button onClick={() => setEditingAd(null)} style={{ ...btn("ghost"), padding: "6px 14px" }}>
+            إلغاء
+          </button>
+        </div>
+
+        {/* Basic info */}
+        <div style={{ display: "grid", gap: 14 }}>
+          <div>
+            <div style={label}>العنوان *</div>
+            <input style={inp} value={editingAd.title}
+              onChange={e => setEditingAd({ ...editingAd, title: e.target.value })}
+              placeholder="عنوان الإعلان" />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <div style={label}>صورة الإعلان (URL)</div>
+              <input style={inp} value={editingAd.image_url || ""}
+                onChange={e => setEditingAd({ ...editingAd, image_url: e.target.value })}
+                placeholder="https://…" />
+            </div>
+            <div>
+              <div style={label}>فيديو الإعلان (URL)</div>
+              <input style={inp} value={editingAd.video_url || ""}
+                onChange={e => setEditingAd({ ...editingAd, video_url: e.target.value })}
+                placeholder="https://…" />
+            </div>
+          </div>
+
+          <div>
+            <div style={label}>رابط الإعلان *</div>
+            <input style={inp} value={editingAd.action_url}
+              onChange={e => setEditingAd({ ...editingAd, action_url: e.target.value })}
+              placeholder="https://instagram.com/…" />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <div style={label}>نص زر التواصل</div>
+              <input style={inp} value={editingAd.contact_label}
+                onChange={e => setEditingAd({ ...editingAd, contact_label: e.target.value })} />
+            </div>
+            <div>
+              <div style={label}>نص زر المشاهدة</div>
+              <input style={inp} value={editingAd.view_label}
+                onChange={e => setEditingAd({ ...editingAd, view_label: e.target.value })} />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div>
+              <div style={label}>عد تنازلي (ثوانٍ)</div>
+              <input style={inp} type="number" min={0} max={30} value={editingAd.countdown_secs}
+                onChange={e => setEditingAd({ ...editingAd, countdown_secs: +e.target.value })} />
+            </div>
+            <div>
+              <div style={label}>الأولوية (رقم أعلى = أهم)</div>
+              <input style={inp} type="number" value={editingAd.priority}
+                onChange={e => setEditingAd({ ...editingAd, priority: +e.target.value })} />
+            </div>
+            <div>
+              <div style={label}>الحالة</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
+                <Toggle checked={editingAd.is_active}
+                  onChange={v => setEditingAd({ ...editingAd, is_active: v })} />
+                <span style={{ fontSize: 13, color: editingAd.is_active ? "#16a34a" : "#9ca3af" }}>
+                  {editingAd.is_active ? "نشط" : "موقوف"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Date range */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <div style={label}>تاريخ البداية (اختياري)</div>
+              <input style={inp} type="date" value={editingAd.start_date || ""}
+                onChange={e => setEditingAd({ ...editingAd, start_date: e.target.value })} />
+            </div>
+            <div>
+              <div style={label}>تاريخ النهاية (اختياري)</div>
+              <input style={inp} type="date" value={editingAd.end_date || ""}
+                onChange={e => setEditingAd({ ...editingAd, end_date: e.target.value })} />
+            </div>
+          </div>
+
+          {/* Show on */}
+          <div>
+            <div style={{ ...label, marginBottom: 10 }}>يظهر في</div>
+            <div style={{ display: "flex", gap: 20 }}>
+              {[
+                { key: "show_on_select", label: "عند اختيار قالب" },
+                { key: "show_on_save",   label: "عند الحفظ" },
+                { key: "show_on_share",  label: "عند المشاركة" },
+              ].map(({ key, label: l }) => (
+                <label key={key} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+                  <input type="checkbox" checked={editingAd[key]}
+                    onChange={e => setEditingAd({ ...editingAd, [key]: e.target.checked })} />
+                  {l}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ ...row, marginTop: 24, justifyContent: "flex-end", gap: 10 }}>
+          <button onClick={() => setEditingAd(null)} style={btn("ghost")}>إلغاء</button>
+          <button onClick={saveAd} disabled={saving} style={btn("primary")}>
+            {saving ? "جارٍ الحفظ…" : "حفظ الإعلان"}
+          </button>
+        </div>
+      </div>
+      <Toast {...toast} />
+    </div>
+  );
+
+  // ── confirm delete modal ────────────────────────────────────────
+  const adToDelete = confirmDelete ? ads.find(a => a.id === confirmDelete) : null;
+
+  // ── main view ───────────────────────────────────────────────────
+  return (
+    <div style={{ maxWidth: 840, margin: "0 auto", padding: "24px 16px", direction: "rtl" }}>
+      <style>{`
+        @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+        .ad-row:hover{background:#f9fafb!important}
+      `}</style>
+
+      <div style={{ ...row, marginBottom: 24 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>إدارة الإعلانات</h1>
+          <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
+            تحكم في إعلانات جوجل والإعلانات المخصصة
+          </div>
+        </div>
+        <button onClick={() => setEditingAd({ ...EMPTY_AD })} style={btn("primary")}>
+          + إعلان جديد
+        </button>
+      </div>
+
+      {/* ── Google Ads Settings ── */}
+      <div style={card}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
+          إعلانات جوجل AdMob
+        </div>
+
+        {[
+          { key: "google_select_enabled", label: "عند اختيار قالب", sub: "إعلان يظهر عند الضغط على أي قالب" },
+          { key: "google_save_enabled",   label: "عند الحفظ",        sub: "إعلان يظهر عند حفظ قالب" },
+          { key: "google_share_enabled",  label: "عند المشاركة",     sub: "إعلان يظهر عند مشاركة قالب" },
+        ].map(({ key, label: l, sub }) => (
+          <div key={key} style={{ ...row, padding: "12px 0", borderBottom: "1px solid #f3f4f6" }}>
+            <div>
+              <div style={label}>{l}</div>
+              <div style={sublabel}>{sub}</div>
+            </div>
+            <Toggle
+              checked={settings?.[key] ?? true}
+              onChange={v => saveSettings({ [key]: v })}
+            />
+          </div>
+        ))}
+
+        <div style={{ marginTop: 12, padding: "10px 14px", background: "#f0fdf4", borderRadius: 8, fontSize: 13, color: "#15803d" }}>
+          ملاحظة: عند تفعيل الإعلانات المخصصة، تأخذ الأولوية على إعلانات جوجل في نفس الموضع.
+        </div>
+      </div>
+
+      {/* ── Custom Ads Master Switch ── */}
+      <div style={{ ...card, ...row }}>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>الإعلانات المخصصة</div>
+          <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
+            تفعيل هذا الخيار يعرض إعلاناتك بدلاً من إعلانات جوجل
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Badge color={settings?.custom_ads_enabled ? "green" : "gray"}>
+            {settings?.custom_ads_enabled ? "مفعّلة" : "موقوفة"}
+          </Badge>
+          <Toggle
+            checked={settings?.custom_ads_enabled ?? false}
+            onChange={v => saveSettings({ custom_ads_enabled: v })}
+          />
+        </div>
+      </div>
+
+      {/* ── Custom Ads List ── */}
+      <div style={card}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
+          قائمة الإعلانات المخصصة
+        </div>
+        <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 16 }}>
+          {ads.length} إعلان — مرتبة حسب الأولوية
+        </div>
+
+        {ads.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 0", color: "#d1d5db" }}>
+            لا توجد إعلانات مخصصة بعد — أضف إعلاناً جديداً
+          </div>
+        ) : ads.map(ad => {
+          const isExpired = ad.end_date && new Date(ad.end_date) < new Date();
+          const isScheduled = ad.start_date && new Date(ad.start_date) > new Date();
+          return (
+            <div
+              key={ad.id}
+              className="ad-row"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr auto auto",
+                gap: 14,
+                alignItems: "center",
+                padding: "14px 10px",
+                borderBottom: "1px solid #f3f4f6",
+                borderRadius: 8,
+                transition: "background .15s",
+                cursor: "default",
+              }}
+            >
+              {/* Priority badge */}
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%",
+                background: "#f3f4f6", display: "flex", alignItems: "center",
+                justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#6b7280",
+                flexShrink: 0,
+              }}>
+                {ad.priority}
+              </div>
+
+              {/* Info */}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "#111827" }}>
+                  {ad.title}
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  {isExpired   && <Badge color="red">منتهي</Badge>}
+                  {isScheduled && <Badge color="blue">مجدول</Badge>}
+                  {ad.show_on_select && <Badge>اختيار</Badge>}
+                  {ad.show_on_save   && <Badge>حفظ</Badge>}
+                  {ad.show_on_share  && <Badge>مشاركة</Badge>}
+                  {ad.start_date && (
+                    <span style={{ fontSize: 11, color: "#9ca3af" }}>
+                      {ad.start_date} → {ad.end_date || "∞"}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Toggle */}
+              <Toggle checked={ad.is_active} onChange={() => toggleAd(ad)} />
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  onClick={() => setEditingAd({ ...ad })}
+                  style={{ ...btn("ghost"), padding: "6px 12px", fontSize: 13 }}
+                >
+                  تعديل
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(ad.id)}
+                  style={{ ...btn("danger"), padding: "6px 12px", fontSize: 13 }}
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Confirm Delete Dialog ── */}
+      {confirmDelete && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,.5)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div style={{ ...card, maxWidth: 380, margin: 0, animation: "fadeIn .2s ease" }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>
+              حذف الإعلان؟
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 14, marginBottom: 20 }}>
+              سيتم حذف "<strong>{adToDelete?.title}</strong>" نهائياً.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmDelete(null)} style={btn("ghost")}>إلغاء</button>
+              <button onClick={() => deleteAd(confirmDelete)} style={btn("danger")}>حذف</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Toast {...toast} />
+    </div>
+  );
+}

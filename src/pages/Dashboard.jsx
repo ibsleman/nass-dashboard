@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import AdsManager from './AdsManager'
 import Sidebar, { CATEGORIES } from '../components/Sidebar'
 import FilterBar from '../components/FilterBar'
 import TemplateCard from '../components/TemplateCard'
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const { isDark, toggleTheme } = useTheme()
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key)
+  const isAdsPage = activeCategory === '__ads__'
   const [templates, setTemplates]           = useState([])
   const [loading, setLoading]               = useState(false)
   const [typeFilter, setTypeFilter]         = useState('all')
@@ -273,62 +275,66 @@ export default function Dashboard() {
 
         {/* المحتوى الرئيسي */}
         <main className="flex-1 overflow-y-auto scrollbar-thin">
-          <div className="p-3 sm:p-4 md:p-6">
+          {isAdsPage ? (
+            <AdsManager />
+          ) : (
+            <div className="p-3 sm:p-4 md:p-6">
 
-            <FilterBar
-              typeFilter={typeFilter}
-              premiumFilter={premiumFilter}
-              onTypeChange={setTypeFilter}
-              onPremiumChange={setPremiumFilter}
-              total={filtered.length}
-            />
+              <FilterBar
+                typeFilter={typeFilter}
+                premiumFilter={premiumFilter}
+                onTypeChange={setTypeFilter}
+                onPremiumChange={setPremiumFilter}
+                total={filtered.length}
+              />
 
-            {/* ─── Grid ─── */}
-            {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse">
-                    <div className="aspect-[9/16]" />
-                    <div className="p-3 space-y-2">
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-3/4" />
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-1/2" />
+              {/* ─── Grid ─── */}
+              {loading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse">
+                      <div className="aspect-[9/16]" />
+                      <div className="p-3 space-y-2">
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-3/4" />
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full w-1/2" />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 md:py-28 text-center px-4">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 flex items-center justify-center mb-4 shadow-inner">
-                  <span className="text-3xl md:text-4xl">{activeCat?.emoji}</span>
+                  ))}
                 </div>
-                <h3 className="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 mb-1.5">لا توجد قوالب</h3>
-                <p className="text-sm text-gray-400 dark:text-gray-500 mb-5 max-w-xs">
-                  {typeFilter !== 'all' || premiumFilter !== 'all'
-                    ? 'لا توجد قوالب تطابق الفلتر الحالي'
-                    : `ابدأ بإضافة أول قالب في قسم "${activeCat?.label}"`}
-                </p>
-                {typeFilter === 'all' && premiumFilter === 'all' && (
-                  <button
-                    onClick={() => { setEditTemplate(null); setModalOpen(true) }}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-l from-brand-600 to-brand-500 text-white text-sm font-semibold shadow-md hover:from-brand-700 hover:to-brand-600 transition-all"
-                  >
-                    إضافة قالب جديد
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
-                {filtered.map((template) => (
-                  <TemplateCard
-                    key={template.id}
-                    template={template}
-                    onEdit={(t)   => { setEditTemplate(t); setModalOpen(true) }}
-                    onDelete={(t) => setDeleteTarget(t)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+              ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 md:py-28 text-center px-4">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-brand-50 to-purple-50 dark:from-gray-800 dark:to-gray-800 flex items-center justify-center mb-4 shadow-inner">
+                    <span className="text-3xl md:text-4xl">{activeCat?.emoji}</span>
+                  </div>
+                  <h3 className="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 mb-1.5">لا توجد قوالب</h3>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-5 max-w-xs">
+                    {typeFilter !== 'all' || premiumFilter !== 'all'
+                      ? 'لا توجد قوالب تطابق الفلتر الحالي'
+                      : `ابدأ بإضافة أول قالب في قسم "${activeCat?.label}"`}
+                  </p>
+                  {typeFilter === 'all' && premiumFilter === 'all' && (
+                    <button
+                      onClick={() => { setEditTemplate(null); setModalOpen(true) }}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-l from-brand-600 to-brand-500 text-white text-sm font-semibold shadow-md hover:from-brand-700 hover:to-brand-600 transition-all"
+                    >
+                      إضافة قالب جديد
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
+                  {filtered.map((template) => (
+                    <TemplateCard
+                      key={template.id}
+                      template={template}
+                      onEdit={(t)   => { setEditTemplate(t); setModalOpen(true) }}
+                      onDelete={(t) => setDeleteTarget(t)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
 

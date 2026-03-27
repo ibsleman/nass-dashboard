@@ -8,6 +8,7 @@ const CATEGORIES = [
   { key: 'marriage',   label: 'زواج',        emoji: '💒' },
   { key: 'newborn',    label: 'مولود',       emoji: '👶' },
   { key: 'graduation', label: 'تخرج',        emoji: '🎓' },
+  { key: '__ads__',    label: 'الإعلانات',   emoji: '📢' },
 ]
 
 export { CATEGORIES }

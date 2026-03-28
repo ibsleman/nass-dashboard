@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 // ── replace with your Supabase credentials ──────────────────────
@@ -12,9 +12,10 @@ const EMPTY_AD = {
   title: "",
   image_url: "",
   video_url: "",
-  action_url: "",
   contact_label: "تواصل معنا",
+  contact_button_url: "",
   view_label: "مشاهدة",
+  watch_button_url: "",
   countdown_secs: 5,
   show_on_select: true,
   show_on_save: true,
@@ -24,6 +25,17 @@ const EMPTY_AD = {
   start_date: "",
   end_date: "",
 };
+
+async function uploadMedia(file, type) {
+  const ext = file.name.split(".").pop();
+  const path = `${type}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from("ads")
+    .upload(path, file, { upsert: true });
+  if (error) throw error;
+  const { data } = supabase.storage.from("ads").getPublicUrl(path);
+  return data.publicUrl;
+}
 
 function Toggle({ checked, onChange, disabled }) {
   return (
@@ -117,13 +129,25 @@ export default function AdsManager() {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editingAd, setEditingAd] = useState(null); // null | EMPTY_AD | existing ad obj
+  const [editingAd, setEditingAd] = useState(null);
   const [toast, setToast] = useState({ msg: "", type: "ok" });
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [conflictWarning, setConflictWarning] = useState("");
+  const [imageMode, setImageMode] = useState("url"); // "url" | "upload"
+  const [videoMode, setVideoMode] = useState("url");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
 
   function showToast(msg, type = "ok") {
     setToast({ msg, type });
     setTimeout(() => setToast({ msg: "", type: "ok" }), 3000);
+  }
+
+  function showConflictWarning(msg) {
+    setConflictWarning(msg);
+    setTimeout(() => setConflictWarning(""), 4000);
   }
 
   // ── fetch ───────────────────────────────────────────────────────
@@ -140,13 +164,42 @@ export default function AdsManager() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  // ── save settings ───────────────────────────────────────────────
+  // ── save settings (with conflict prevention) ────────────────────
   async function saveSettings(patch) {
-    const next = { ...settings, ...patch };
+    let finalPatch = { ...patch };
+    let warned = false;
+
+    // Conflict: enabling a custom event → disable the matching google event
+    const customToGoogle = {
+      custom_select_enabled: "google_select_enabled",
+      custom_save_enabled: "google_save_enabled",
+      custom_share_enabled: "google_share_enabled",
+    };
+    // Conflict: enabling a google event → disable the matching custom event
+    const googleToCustom = {
+      google_select_enabled: "custom_select_enabled",
+      google_save_enabled: "custom_save_enabled",
+      google_share_enabled: "custom_share_enabled",
+    };
+
+    for (const [key, val] of Object.entries(patch)) {
+      if (val === true) {
+        const opposite = customToGoogle[key] || googleToCustom[key];
+        if (opposite && settings?.[opposite]) {
+          finalPatch[opposite] = false;
+          if (!warned) {
+            showConflictWarning("تم إيقاف نفس الحدث في إعلانات جوجل تلقائياً لتجنب التضارب.");
+            warned = true;
+          }
+        }
+      }
+    }
+
+    const next = { ...settings, ...finalPatch };
     setSettings(next);
     const { error } = await supabase
       .from("ads_settings")
-      .update(patch)
+      .update(finalPatch)
       .eq("id", 1);
     if (error) showToast("خطأ في الحفظ", "error");
     else showToast("تم الحفظ");
@@ -155,13 +208,14 @@ export default function AdsManager() {
   // ── save ad (insert or update) ──────────────────────────────────
   async function saveAd() {
     if (!editingAd.title.trim()) { showToast("اكتب عنوان الإعلان", "error"); return; }
-    if (!editingAd.action_url.trim()) { showToast("أضف رابط الإعلان", "error"); return; }
     setSaving(true);
     const payload = { ...editingAd };
     if (!payload.start_date) payload.start_date = null;
     if (!payload.end_date) payload.end_date = null;
     if (!payload.image_url) payload.image_url = null;
     if (!payload.video_url) payload.video_url = null;
+    if (!payload.contact_button_url) payload.contact_button_url = null;
+    if (!payload.watch_button_url) payload.watch_button_url = null;
 
     let error;
     if (payload.id) {
@@ -191,6 +245,34 @@ export default function AdsManager() {
     if (!error) { setAds(ads.filter(a => a.id !== id)); showToast("تم الحذف"); }
     else showToast("خطأ في الحذف", "error");
     setConfirmDelete(null);
+  }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const url = await uploadMedia(file, "images");
+      setEditingAd(prev => ({ ...prev, image_url: url }));
+    } catch (err) {
+      showToast("فشل رفع الصورة: " + err.message, "error");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  async function handleVideoUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVideo(true);
+    try {
+      const url = await uploadMedia(file, "videos");
+      setEditingAd(prev => ({ ...prev, video_url: url }));
+    } catch (err) {
+      showToast("فشل رفع الفيديو: " + err.message, "error");
+    } finally {
+      setUploadingVideo(false);
+    }
   }
 
   // ── styles ──────────────────────────────────────────────────────
@@ -233,6 +315,18 @@ export default function AdsManager() {
     color: variant === "ghost" ? "#374151" : "#fff",
   });
 
+  const tabBtn = (active) => ({
+    padding: "5px 14px",
+    borderRadius: 6,
+    border: "none",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 600,
+    background: active ? "#1d4ed8" : "#f3f4f6",
+    color: active ? "#fff" : "#6b7280",
+    transition: "background .15s",
+  });
+
   if (loading) return (
     <div style={{ textAlign: "center", padding: 80, color: "#9ca3af" }}>
       جارٍ التحميل…
@@ -253,8 +347,8 @@ export default function AdsManager() {
           </button>
         </div>
 
-        {/* Basic info */}
         <div style={{ display: "grid", gap: 14 }}>
+          {/* Title */}
           <div>
             <div style={label}>العنوان *</div>
             <input style={inp} value={editingAd.title}
@@ -262,28 +356,83 @@ export default function AdsManager() {
               placeholder="عنوان الإعلان" />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <div style={label}>صورة الإعلان (URL)</div>
+          {/* Image */}
+          <div>
+            <div style={{ ...row, marginBottom: 8, justifyContent: "flex-start", gap: 8 }}>
+              <span style={label}>صورة الإعلان</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button style={tabBtn(imageMode === "url")} onClick={() => setImageMode("url")}>رابط URL</button>
+                <button style={tabBtn(imageMode === "upload")} onClick={() => setImageMode("upload")}>رفع من الجهاز</button>
+              </div>
+            </div>
+            {imageMode === "url" ? (
               <input style={inp} value={editingAd.image_url || ""}
                 onChange={e => setEditingAd({ ...editingAd, image_url: e.target.value })}
                 placeholder="https://…" />
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleImageUpload}
+                />
+                <button
+                  style={{ ...btn("ghost"), padding: "8px 16px" }}
+                  disabled={uploadingImage}
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  {uploadingImage ? "جارٍ الرفع…" : "اختر صورة"}
+                </button>
+                {editingAd.image_url && (
+                  <span style={{ fontSize: 12, color: "#16a34a", wordBreak: "break-all" }}>
+                    ✓ تم رفع الصورة
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Video */}
+          <div>
+            <div style={{ ...row, marginBottom: 8, justifyContent: "flex-start", gap: 8 }}>
+              <span style={label}>فيديو الإعلان</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button style={tabBtn(videoMode === "url")} onClick={() => setVideoMode("url")}>رابط URL</button>
+                <button style={tabBtn(videoMode === "upload")} onClick={() => setVideoMode("upload")}>رفع من الجهاز</button>
+              </div>
             </div>
-            <div>
-              <div style={label}>فيديو الإعلان (URL)</div>
+            {videoMode === "url" ? (
               <input style={inp} value={editingAd.video_url || ""}
                 onChange={e => setEditingAd({ ...editingAd, video_url: e.target.value })}
                 placeholder="https://…" />
-            </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  style={{ display: "none" }}
+                  onChange={handleVideoUpload}
+                />
+                <button
+                  style={{ ...btn("ghost"), padding: "8px 16px" }}
+                  disabled={uploadingVideo}
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  {uploadingVideo ? "جارٍ الرفع…" : "اختر فيديو"}
+                </button>
+                {editingAd.video_url && (
+                  <span style={{ fontSize: 12, color: "#16a34a", wordBreak: "break-all" }}>
+                    ✓ تم رفع الفيديو
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          <div>
-            <div style={label}>رابط الإعلان *</div>
-            <input style={inp} value={editingAd.action_url}
-              onChange={e => setEditingAd({ ...editingAd, action_url: e.target.value })}
-              placeholder="https://instagram.com/…" />
-          </div>
-
+          {/* Contact button */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
               <div style={label}>نص زر التواصل</div>
@@ -291,12 +440,29 @@ export default function AdsManager() {
                 onChange={e => setEditingAd({ ...editingAd, contact_label: e.target.value })} />
             </div>
             <div>
+              <div style={label}>رابط زر التواصل</div>
+              <input style={inp} value={editingAd.contact_button_url || ""}
+                onChange={e => setEditingAd({ ...editingAd, contact_button_url: e.target.value })}
+                placeholder="واتساب / إيميل / انستغرام / أي رابط" />
+            </div>
+          </div>
+
+          {/* Watch button */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
               <div style={label}>نص زر المشاهدة</div>
               <input style={inp} value={editingAd.view_label}
                 onChange={e => setEditingAd({ ...editingAd, view_label: e.target.value })} />
             </div>
+            <div>
+              <div style={label}>رابط زر المشاهدة</div>
+              <input style={inp} value={editingAd.watch_button_url || ""}
+                onChange={e => setEditingAd({ ...editingAd, watch_button_url: e.target.value })}
+                placeholder="يوتيوب / تيك توك / أي رابط" />
+            </div>
           </div>
 
+          {/* Countdown / Priority / Status */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <div>
               <div style={label}>عد تنازلي (ثوانٍ)</div>
@@ -355,7 +521,7 @@ export default function AdsManager() {
 
         <div style={{ ...row, marginTop: 24, justifyContent: "flex-end", gap: 10 }}>
           <button onClick={() => setEditingAd(null)} style={btn("ghost")}>إلغاء</button>
-          <button onClick={saveAd} disabled={saving} style={btn("primary")}>
+          <button onClick={saveAd} disabled={saving || uploadingImage || uploadingVideo} style={btn("primary")}>
             {saving ? "جارٍ الحفظ…" : "حفظ الإعلان"}
           </button>
         </div>
@@ -382,10 +548,26 @@ export default function AdsManager() {
             تحكم في إعلانات جوجل والإعلانات المخصصة
           </div>
         </div>
-        <button onClick={() => setEditingAd({ ...EMPTY_AD })} style={btn("primary")}>
+        <button onClick={() => { setImageMode("url"); setVideoMode("url"); setEditingAd({ ...EMPTY_AD }); }} style={btn("primary")}>
           + إعلان جديد
         </button>
       </div>
+
+      {/* Conflict warning */}
+      {conflictWarning && (
+        <div style={{
+          padding: "10px 16px",
+          background: "#fffbeb",
+          border: "1px solid #fcd34d",
+          borderRadius: 8,
+          fontSize: 13,
+          color: "#92400e",
+          marginBottom: 16,
+          animation: "fadeIn .2s ease",
+        }}>
+          ⚠️ {conflictWarning}
+        </div>
+      )}
 
       {/* ── Google Ads Settings ── */}
       <div style={card}>
@@ -432,6 +614,30 @@ export default function AdsManager() {
             onChange={v => saveSettings({ custom_ads_enabled: v })}
           />
         </div>
+      </div>
+
+      {/* ── Custom Ads Event Toggles ── */}
+      <div style={card}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>
+          مواضع الإعلانات المخصصة
+        </div>
+
+        {[
+          { key: "custom_select_enabled", label: "عند اختيار قالب", sub: "إعلان مخصص يظهر عند الضغط على أي قالب" },
+          { key: "custom_save_enabled",   label: "عند الحفظ",        sub: "إعلان مخصص يظهر عند حفظ قالب" },
+          { key: "custom_share_enabled",  label: "عند المشاركة",     sub: "إعلان مخصص يظهر عند مشاركة قالب" },
+        ].map(({ key, label: l, sub }) => (
+          <div key={key} style={{ ...row, padding: "12px 0", borderBottom: "1px solid #f3f4f6" }}>
+            <div>
+              <div style={label}>{l}</div>
+              <div style={sublabel}>{sub}</div>
+            </div>
+            <Toggle
+              checked={settings?.[key] ?? true}
+              onChange={v => saveSettings({ [key]: v })}
+            />
+          </div>
+        ))}
       </div>
 
       {/* ── Custom Ads List ── */}
@@ -501,7 +707,7 @@ export default function AdsManager() {
               {/* Actions */}
               <div style={{ display: "flex", gap: 6 }}>
                 <button
-                  onClick={() => setEditingAd({ ...ad })}
+                  onClick={() => { setImageMode("url"); setVideoMode("url"); setEditingAd({ ...ad }); }}
                   style={{ ...btn("ghost"), padding: "6px 12px", fontSize: 13 }}
                 >
                   تعديل

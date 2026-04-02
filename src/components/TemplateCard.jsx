@@ -39,7 +39,7 @@ const TYPE_META = {
 
 export default function TemplateCard({ template, onEdit, onDelete }) {
   const meta       = TYPE_META[template.type] ?? TYPE_META.image
-  const previewUrl = template.image_url
+  const previewUrl = template.thumbnail_url || template.image_url
   const name       = template.image_name || template.video_name || '—'
 
   return (

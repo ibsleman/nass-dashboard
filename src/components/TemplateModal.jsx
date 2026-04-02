@@ -9,14 +9,16 @@ const EMPTY_FORM = {
   name_position_x:  null,
   name_position_y:  null,
   text_appear_time: '',
+  thumbnail_name:   '',
 }
 
 export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, category }) {
   const [form, setForm]               = useState(EMPTY_FORM)
-  const [imageFile, setImageFile]     = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
-  const [videoFile, setVideoFile]     = useState(null)
-  const [uploading, setUploading]     = useState(false)
+  const [imageFile, setImageFile]         = useState(null)
+  const [imagePreview, setImagePreview]   = useState(null)
+  const [videoFile, setVideoFile]         = useState(null)
+  const [thumbnailFile, setThumbnailFile] = useState(null)
+  const [uploading, setUploading]         = useState(false)
   const [error, setError]             = useState('')
   const [markerPos, setMarkerPos]     = useState(null)
 
@@ -35,10 +37,12 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
         name_position_x:  editTemplate.name_position_x  ?? null,
         name_position_y:  editTemplate.name_position_y  ?? null,
         text_appear_time: editTemplate.text_appear_time ?? '',
+        thumbnail_name:   editTemplate.thumbnail_name   ?? '',
       })
       setImagePreview(editTemplate.image_url ?? null)
       setImageFile(null)
       setVideoFile(null)
+      setThumbnailFile(null)
       setMarkerPos(
         editTemplate.name_position_x != null
           ? { ratio: { x: editTemplate.name_position_x, y: editTemplate.name_position_y } }
@@ -49,6 +53,7 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       setImagePreview(null)
       setImageFile(null)
       setVideoFile(null)
+      setThumbnailFile(null)
       setMarkerPos(null)
     }
     setError('')
@@ -137,6 +142,13 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
     setForm((f) => ({ ...f, video_name: file.name }))
   }
 
+  const handleThumbnailFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setThumbnailFile(file)
+    setForm((f) => ({ ...f, thumbnail_name: file.name }))
+  }
+
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -171,6 +183,14 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       } else {
         payload.video_url  = editTemplate?.video_url  ?? null
         payload.video_name = form.video_name || editTemplate?.video_name || null
+      }
+      if (thumbnailFile) {
+        const { publicUrl, fileName } = await uploadFile(thumbnailFile, 'thumbnails')
+        payload.thumbnail_url  = publicUrl
+        payload.thumbnail_name = fileName.split('/').pop()
+      } else {
+        payload.thumbnail_url  = editTemplate?.thumbnail_url  ?? null
+        payload.thumbnail_name = form.thumbnail_name || editTemplate?.thumbnail_name || null
       }
       await onSave(payload, editTemplate?.id ?? null)
       onClose()
@@ -295,6 +315,41 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
                   {videoFile ? videoFile.name : 'اضغط لاختيار فيديو (MP4, MOV)'}
                 </span>
                 <input type="file" accept="video/*" className="hidden" onChange={handleVideoFile} />
+              </label>
+            </div>
+          )}
+
+          {/* غلاف الفيديو (Thumbnail) */}
+          {needsVideo && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                صورة الغلاف {editTemplate ? '(اتركها فارغة للإبقاء على الحالية)' : '(اختياري)'}
+              </label>
+              <label className="flex flex-col items-center justify-center gap-2 w-full h-28 sm:h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 transition-colors bg-gray-50 dark:bg-gray-800 active:bg-gray-100">
+                {thumbnailFile ? (
+                  <img
+                    src={URL.createObjectURL(thumbnailFile)}
+                    alt="غلاف"
+                    className="h-full w-full object-cover rounded-xl"
+                  />
+                ) : editTemplate?.thumbnail_url ? (
+                  <img
+                    src={editTemplate.thumbnail_url}
+                    alt="غلاف"
+                    className="h-full w-full object-cover rounded-xl"
+                  />
+                ) : (
+                  <>
+                    <svg className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 text-center px-2">
+                      اضغط لاختيار صورة غلاف الفيديو
+                    </span>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailFile} />
               </label>
             </div>
           )}

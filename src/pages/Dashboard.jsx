@@ -4,6 +4,7 @@ import Sidebar, { CATEGORIES } from '../components/Sidebar'
 import FilterBar from '../components/FilterBar'
 import TemplateCard from '../components/TemplateCard'
 import TemplateModal from '../components/TemplateModal'
+import BulkUploadModal from '../components/BulkUploadModal'
 import DeleteConfirm from '../components/DeleteConfirm'
 import { useTheme } from '../context/ThemeContext'
 import {
@@ -30,10 +31,11 @@ export default function Dashboard() {
   const dropdownRef                         = useRef(null)
 
   // Modal / Delete
-  const [modalOpen, setModalOpen]       = useState(false)
-  const [editTemplate, setEditTemplate] = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
-  const [deleting, setDeleting]         = useState(false)
+  const [modalOpen, setModalOpen]         = useState(false)
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+  const [editTemplate, setEditTemplate]   = useState(null)
+  const [deleteTarget, setDeleteTarget]   = useState(null)
+  const [deleting, setDeleting]           = useState(false)
 
   // Toast
   const [toast, setToast] = useState(null)
@@ -250,6 +252,17 @@ export default function Dashboard() {
             )}
           </button>
 
+          {/* زر رفع متعدد */}
+          <button
+            onClick={() => setBulkModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all text-sm"
+          >
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span className="hidden sm:inline">رفع متعدد</span>
+          </button>
+
           {/* زر الإضافة */}
           <button
             onClick={() => { setEditTemplate(null); setModalOpen(true) }}
@@ -339,6 +352,13 @@ export default function Dashboard() {
       </div>
 
       {/* ══════════ Modals ══════════ */}
+      <BulkUploadModal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        onSave={handleSave}
+        category={activeCategory}
+      />
+
       <TemplateModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

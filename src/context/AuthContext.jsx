@@ -1,28 +1,38 @@
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
-const STORAGE_KEY = 'nass_cms_auth'
-const CORRECT_PASSWORD = import.meta.env.VITE_DASHBOARD_PASSWORD
-
 export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === 'true'
-  )
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const login = useCallback((password) => {
-    if (password === CORRECT_PASSWORD) {
-      localStorage.setItem(STORAGE_KEY, 'true')
-      setIsAuthenticated(true)
-      return true
-    }
-    return false
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
-    setIsAuthenticated(false)
+  const login = useCallback(async (password) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: 'ad@nass.com',
+      password,
+    })
+    if (error) throw error
   }, [])
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut()
+  }, [])
+
+  if (loading) return null
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>

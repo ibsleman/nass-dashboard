@@ -13,9 +13,11 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 400))
-    const ok = login(password)
-    if (!ok) setError('كلمة السر غير صحيحة')
+    try {
+      await login(password)
+    } catch {
+      setError('كلمة السر غير صحيحة')
+    }
     setLoading(false)
   }
 

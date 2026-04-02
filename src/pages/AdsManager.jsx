@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-// ── replace with your Supabase credentials ──────────────────────
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase, supabaseAdmin } from "../lib/supabase";
 
 // ── helpers ──────────────────────────────────────────────────────
 const EMPTY_AD = {
@@ -29,12 +23,12 @@ const EMPTY_AD = {
 async function uploadMedia(file, type) {
   const ext = file.name.split(".").pop();
   const path = `${type}/${Date.now()}.${ext}`;
-  const { error } = await supabase.storage
+  const { error } = await supabaseAdmin.storage
     .from("ads")
     .upload(path, file, { upsert: true });
   if (error) throw error;
-  const { data } = supabase.storage.from("ads").getPublicUrl(path);
-  return data.publicUrl;
+  const { data } = supabaseAdmin.storage.from("ads").getPublicUrl(path);
+  return data.publicUrl.replace('https://dlecapxnppfmpokoitek.supabase.co', 'https://cdn.ibsleman.com');
 }
 
 function Toggle({ checked, onChange, disabled }) {
@@ -197,7 +191,7 @@ export default function AdsManager() {
 
     const next = { ...settings, ...finalPatch };
     setSettings(next);
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("ads_settings")
       .update(finalPatch)
       .eq("id", 1);
@@ -219,10 +213,10 @@ export default function AdsManager() {
 
     let error;
     if (payload.id) {
-      ({ error } = await supabase.from("custom_ads").update(payload).eq("id", payload.id));
+      ({ error } = await supabaseAdmin.from("custom_ads").update(payload).eq("id", payload.id));
     } else {
       delete payload.id;
-      ({ error } = await supabase.from("custom_ads").insert(payload));
+      ({ error } = await supabaseAdmin.from("custom_ads").insert(payload));
     }
     setSaving(false);
     if (error) { showToast("خطأ في الحفظ: " + error.message, "error"); return; }
@@ -232,7 +226,7 @@ export default function AdsManager() {
   }
 
   async function toggleAd(ad) {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("custom_ads")
       .update({ is_active: !ad.is_active })
       .eq("id", ad.id);
@@ -241,7 +235,7 @@ export default function AdsManager() {
   }
 
   async function deleteAd(id) {
-    const { error } = await supabase.from("custom_ads").delete().eq("id", id);
+    const { error } = await supabaseAdmin.from("custom_ads").delete().eq("id", id);
     if (!error) { setAds(ads.filter(a => a.id !== id)); showToast("تم الحذف"); }
     else showToast("خطأ في الحذف", "error");
     setConfirmDelete(null);

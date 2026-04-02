@@ -162,7 +162,7 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
         payload.image_name = fileName.split('/').pop()
       } else {
         payload.image_url  = editTemplate?.image_url  ?? null
-        payload.image_name = form.image_name || editTemplate?.image_name || null
+        payload.image_name = form.image_name || editTemplate?.image_name || ''
       }
       if (videoFile) {
         const { publicUrl, fileName } = await uploadFile(videoFile, 'videos')

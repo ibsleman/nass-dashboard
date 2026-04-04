@@ -7,8 +7,12 @@ const CATEGORIES = [
   { key: 'engagement', label: 'خطوبة',       emoji: '💍' },
   { key: 'marriage',   label: 'زواج',        emoji: '💒' },
   { key: 'newborn',    label: 'مولود',       emoji: '👶' },
-  { key: 'graduation', label: 'تخرج',        emoji: '🎓' },
-  { key: '__ads__',    label: 'الإعلانات',   emoji: '📢' },
+  { key: 'graduation',  label: 'تخرج',         emoji: '🎓' },
+  { key: 'birthday',   label: 'عيد ميلاد',   emoji: '🎂' },
+  { key: 'invitations', label: 'دعوات',       emoji: '✉️' },
+  { key: 'promotion',  label: 'ترقية وتكريم', emoji: '🏅' },
+  { key: 'condolences', label: 'تعزية',       emoji: '🕊️' },
+  { key: '__ads__',    label: 'الإعلانات',    emoji: '📢' },
 ]
 
 export { CATEGORIES }

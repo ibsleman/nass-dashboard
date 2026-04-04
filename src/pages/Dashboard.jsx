@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import AdsManager from './AdsManager'
+import AppUpdatesManager from './AppUpdatesManager'
 import Sidebar, { CATEGORIES } from '../components/Sidebar'
 import FilterBar from '../components/FilterBar'
 import TemplateCard from '../components/TemplateCard'
@@ -13,13 +14,16 @@ import {
   updateTemplate,
   deleteTemplate,
   deleteFile,
+  updateTemplatesVisibility,
+  deleteTemplates,
 } from '../lib/supabase'
 
 export default function Dashboard() {
   const { isDark, toggleTheme } = useTheme()
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key)
-  const isAdsPage = activeCategory === '__ads__'
+  const isAdsPage     = activeCategory === '__ads__'
+  const isUpdatesPage = activeCategory === '__updates__'
   const [templates, setTemplates]           = useState([])
   const [loading, setLoading]               = useState(false)
   const [typeFilter, setTypeFilter]         = useState('all')
@@ -36,6 +40,10 @@ export default function Dashboard() {
   const [editTemplate, setEditTemplate]   = useState(null)
   const [deleteTarget, setDeleteTarget]   = useState(null)
   const [deleting, setDeleting]           = useState(false)
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds]   = useState(new Set())
+  const [bulkLoading, setBulkLoading]   = useState(false)
 
   // Toast
   const [toast, setToast] = useState(null)
@@ -83,6 +91,7 @@ export default function Dashboard() {
     loadTemplates(activeCategory)
     setTypeFilter('all')
     setPremiumFilter('all')
+    setSelectedIds(new Set())
   }, [activeCategory, loadTemplates])
 
   // ─── Toast ──────────────────────────────────────────────────────────────────
@@ -138,6 +147,88 @@ export default function Dashboard() {
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
+    }
+  }
+
+  // ─── Bulk selection ─────────────────────────────────────────────────────────
+  const handleToggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === filtered.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filtered.map((t) => t.id)))
+    }
+  }
+
+  // ─── Toggle visibility لقالب واحد ────────────────────────────────────────
+  const handleToggleVisibility = async (template) => {
+    const newValue = template.is_visible !== false
+    try {
+      await updateTemplatesVisibility([template.id], !newValue)
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === template.id ? { ...t, is_visible: !newValue } : t))
+      )
+      showToast(!newValue ? 'تم إخفاء القالب' : 'تم إظهار القالب')
+    } catch (err) {
+      showToast('خطأ: ' + err.message, 'error')
+    }
+  }
+
+  // ─── Bulk hide/show ───────────────────────────────────────────────────────
+  const handleBulkSetVisibility = async (isVisible) => {
+    const ids = [...selectedIds]
+    setBulkLoading(true)
+    try {
+      await updateTemplatesVisibility(ids, isVisible)
+      setTemplates((prev) =>
+        prev.map((t) => ids.includes(t.id) ? { ...t, is_visible: isVisible } : t)
+      )
+      setSelectedIds(new Set())
+      showToast(isVisible ? `تم إظهار ${ids.length} قالب ✓` : `تم إخفاء ${ids.length} قالب ✓`)
+    } catch (err) {
+      showToast('خطأ: ' + err.message, 'error')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  // ─── Bulk delete ──────────────────────────────────────────────────────────
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds]
+    if (!window.confirm(`هل تريد حذف ${ids.length} قالب؟ لا يمكن التراجع عن هذا الإجراء.`)) return
+    setBulkLoading(true)
+    try {
+      const extractPath = (url) => {
+        if (!url) return null
+        try {
+          const u = new URL(url)
+          const parts = u.pathname.split('/storage/v1/object/public/templates/')
+          return parts[1] ?? null
+        } catch { return null }
+      }
+      const selectedTemplates = templates.filter((t) => ids.includes(t.id))
+      await Promise.allSettled(
+        selectedTemplates.flatMap((t) => [
+          extractPath(t.image_url) ? deleteFile(extractPath(t.image_url)) : null,
+          extractPath(t.video_url) ? deleteFile(extractPath(t.video_url)) : null,
+        ].filter(Boolean))
+      )
+      await deleteTemplates(ids)
+      setTemplates((prev) => prev.filter((t) => !ids.includes(t.id)))
+      setCounts((prev) => ({ ...prev, [activeCategory]: Math.max(0, (prev[activeCategory] ?? ids.length) - ids.length) }))
+      setSelectedIds(new Set())
+      showToast(`تم حذف ${ids.length} قالب بنجاح`)
+    } catch (err) {
+      showToast('خطأ في الحذف: ' + err.message, 'error')
+    } finally {
+      setBulkLoading(false)
     }
   }
 
@@ -290,6 +381,8 @@ export default function Dashboard() {
         <main className="flex-1 overflow-y-auto scrollbar-thin">
           {isAdsPage ? (
             <AdsManager />
+          ) : isUpdatesPage ? (
+            <AppUpdatesManager />
           ) : (
             <div className="p-3 sm:p-4 md:p-6">
 
@@ -300,6 +393,81 @@ export default function Dashboard() {
                 onPremiumChange={setPremiumFilter}
                 total={filtered.length}
               />
+
+              {/* ─── شريط التحديد الجماعي ─── */}
+              {!loading && filtered.length > 0 && (
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  >
+                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${
+                      selectedIds.size === filtered.length && filtered.length > 0
+                        ? 'bg-brand-500 border-brand-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                    }`}>
+                      {selectedIds.size === filtered.length && filtered.length > 0 && (
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    تحديد الكل
+                  </button>
+                </div>
+              )}
+
+              {/* ─── شريط Actions للتحديد الجماعي ─── */}
+              {selectedIds.size > 0 && (
+                <div className="flex items-center gap-2 mb-4 p-3 bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 rounded-2xl flex-wrap">
+                  <span className="text-xs font-bold text-brand-700 dark:text-brand-300 bg-brand-100 dark:bg-brand-900/40 px-2.5 py-1 rounded-full tabular-nums flex-shrink-0">
+                    {selectedIds.size} محدد
+                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleBulkSetVisibility(false)}
+                      disabled={bulkLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                      إخفاء المحدد
+                    </button>
+                    <button
+                      onClick={() => handleBulkSetVisibility(true)}
+                      disabled={bulkLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      إظهار المحدد
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={bulkLoading}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      حذف المحدد
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="mr-auto text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
+                    إلغاء التحديد
+                  </button>
+                </div>
+              )}
 
               {/* ─── Grid ─── */}
               {loading ? (
@@ -342,6 +510,9 @@ export default function Dashboard() {
                       template={template}
                       onEdit={(t)   => { setEditTemplate(t); setModalOpen(true) }}
                       onDelete={(t) => setDeleteTarget(t)}
+                      isSelected={selectedIds.has(template.id)}
+                      onToggleSelect={handleToggleSelect}
+                      onToggleVisibility={handleToggleVisibility}
                     />
                   ))}
                 </div>

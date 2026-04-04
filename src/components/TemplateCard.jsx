@@ -37,13 +37,18 @@ const TYPE_META = {
   },
 }
 
-export default function TemplateCard({ template, onEdit, onDelete }) {
-  const meta       = TYPE_META[template.type] ?? TYPE_META.image
+export default function TemplateCard({ template, onEdit, onDelete, isSelected, onToggleSelect, onToggleVisibility }) {
+  const meta      = TYPE_META[template.type] ?? TYPE_META.image
   const previewUrl = template.thumbnail_url || template.image_url
-  const name       = template.image_name || template.video_name || '—'
+  const name      = template.image_name || template.video_name || '—'
+  const isHidden  = template.is_visible === false
 
   return (
-    <div className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+    <div className={`group relative bg-white dark:bg-gray-900 rounded-2xl border overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 ${
+      isSelected
+        ? 'border-brand-500 ring-2 ring-brand-500/40'
+        : 'border-gray-100 dark:border-gray-800'
+    } ${isHidden ? 'opacity-50' : ''}`}>
 
       {/* ─── منطقة المعاينة ─── */}
       <div className="relative aspect-[9/16] overflow-hidden">
@@ -65,6 +70,35 @@ export default function TemplateCard({ template, onEdit, onDelete }) {
           </div>
         )}
 
+        {/* ── Checkbox التحديد ── */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleSelect?.(template.id) }}
+          className={`absolute top-2 left-2 z-20 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-150 ${
+            isSelected
+              ? 'opacity-100 bg-brand-500 border-brand-500 shadow-md'
+              : 'opacity-0 group-hover:opacity-100 bg-white/90 dark:bg-gray-800/90 border-gray-300 dark:border-gray-500'
+          }`}
+        >
+          {isSelected && (
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </button>
+
+        {/* ── شارة مخفي ── */}
+        {isHidden && (
+          <div className="absolute bottom-2 left-2 z-10 pointer-events-none">
+            <span className="flex items-center gap-1 bg-gray-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+              </svg>
+              مخفي
+            </span>
+          </div>
+        )}
+
         {/* ── شارة مدفوع ── */}
         {template.is_premium && (
           <div className="absolute top-2 right-2 pointer-events-none">
@@ -74,7 +108,7 @@ export default function TemplateCard({ template, onEdit, onDelete }) {
           </div>
         )}
 
-        {/* ── Overlay عند hover: زرّا التعديل والحذف ── */}
+        {/* ── Overlay عند hover: أزرار الإجراءات ── */}
         <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2.5">
           <button
             onClick={() => onEdit(template)}
@@ -85,6 +119,31 @@ export default function TemplateCard({ template, onEdit, onDelete }) {
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             تعديل
+          </button>
+          <button
+            onClick={() => onToggleVisibility?.(template)}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-700 rounded-xl shadow-lg hover:bg-gray-600 active:scale-95 transition-all text-[12px] font-bold text-white"
+            title={isHidden ? 'إظهار القالب' : 'إخفاء القالب'}
+          >
+            {isHidden ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                إظهار
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+                إخفاء
+              </>
+            )}
           </button>
           <button
             onClick={() => onDelete(template)}

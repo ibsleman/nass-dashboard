@@ -3,8 +3,13 @@ import { getCdnUrl } from './cdn'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+const supabaseAdmin = supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : supabase
 
 // ─── Storage helpers ────────────────────────────────────────────────────────
 
@@ -15,13 +20,13 @@ export async function uploadFile(file, folder = 'images') {
   const ext = file.name.split('.').pop()
   const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
 
-  const { error } = await supabase.storage.from(BUCKET).upload(fileName, file, {
+  const { error } = await supabaseAdmin.storage.from(BUCKET).upload(fileName, file, {
     cacheControl: '3600',
     upsert: false,
   })
   if (error) throw error
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(fileName)
+  const { data } = supabaseAdmin.storage.from(BUCKET).getPublicUrl(fileName)
   const publicUrl = getCdnUrl(data.publicUrl)
   return { publicUrl, fileName }
 }
@@ -128,10 +133,10 @@ export async function deleteAppUpdate(id) {
 export async function uploadUpdateImage(file) {
   const ext = file.name.split('.').pop()
   const fileName = `images/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-  const { error } = await supabase.storage
+  const { error } = await supabaseAdmin.storage
     .from('updates')
     .upload(fileName, file, { cacheControl: '3600', upsert: false })
   if (error) throw error
-  const { data } = supabase.storage.from('updates').getPublicUrl(fileName)
+  const { data } = supabaseAdmin.storage.from('updates').getPublicUrl(fileName)
   return getCdnUrl(data.publicUrl)
 }

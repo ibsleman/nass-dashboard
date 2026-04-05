@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { getCdnUrl } from "../lib/cdn";
 
 // ── helpers ──────────────────────────────────────────────────────
 const EMPTY_AD = {
@@ -28,7 +29,7 @@ async function uploadMedia(file, type) {
     .upload(path, file, { upsert: true });
   if (error) throw error;
   const { data } = supabase.storage.from("ads").getPublicUrl(path);
-  return data.publicUrl.replace('https://dlecapxnppfmpokoitek.supabase.co', 'https://cdn.ibsleman.com');
+  return getCdnUrl(data.publicUrl);
 }
 
 function Toggle({ checked, onChange, disabled }) {

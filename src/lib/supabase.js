@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { getCdnUrl } from './cdn'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -21,7 +22,7 @@ export async function uploadFile(file, folder = 'images') {
   if (error) throw error
 
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(fileName)
-  const publicUrl = data.publicUrl.replace('https://dlecapxnppfmpokoitek.supabase.co', 'https://cdn.ibsleman.com')
+  const publicUrl = getCdnUrl(data.publicUrl)
   return { publicUrl, fileName }
 }
 
@@ -132,5 +133,5 @@ export async function uploadUpdateImage(file) {
     .upload(fileName, file, { cacheControl: '3600', upsert: false })
   if (error) throw error
   const { data } = supabase.storage.from('updates').getPublicUrl(fileName)
-  return data.publicUrl.replace('https://dlecapxnppfmpokoitek.supabase.co', 'https://cdn.ibsleman.com')
+  return getCdnUrl(data.publicUrl)
 }

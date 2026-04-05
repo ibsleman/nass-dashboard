@@ -1,0 +1,7 @@
+export const getCdnUrl = (url) => {
+  if (!url) return url
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  const cdnDomain = import.meta.env.VITE_CDN_DOMAIN
+  if (!supabaseUrl || !cdnDomain) return url
+  return url.replace(supabaseUrl, cdnDomain)
+}

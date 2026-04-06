@@ -18,12 +18,14 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
   const [imagePreview, setImagePreview]   = useState(null)
   const [videoFile, setVideoFile]         = useState(null)
   const [thumbnailFile, setThumbnailFile] = useState(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState(null)
   const [uploading, setUploading]         = useState(false)
   const [error, setError]             = useState('')
   const [markerPos, setMarkerPos]     = useState(null)
 
-  const canvasRef    = useRef(null)
-  const canvasImgRef = useRef(null)
+  const canvasRef      = useRef(null)
+  const canvasImgRef   = useRef(null)
+  const markerPosRef   = useRef(markerPos)
 
   // ─── تهيئة الـ form عند الفتح ─────────────────────────────────────────────
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       setImageFile(null)
       setVideoFile(null)
       setThumbnailFile(null)
+      setThumbnailPreview(null)
       setMarkerPos(
         editTemplate.name_position_x != null
           ? { ratio: { x: editTemplate.name_position_x, y: editTemplate.name_position_y } }
@@ -54,10 +57,13 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       setImageFile(null)
       setVideoFile(null)
       setThumbnailFile(null)
+      setThumbnailPreview(null)
       setMarkerPos(null)
     }
     setError('')
   }, [isOpen, editTemplate])
+
+  useEffect(() => { markerPosRef.current = markerPos }, [markerPos])
 
   // ─── Canvas ───────────────────────────────────────────────────────────────
   const drawCanvas = useCallback((imgSrc) => {
@@ -74,19 +80,28 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       const ctx = canvas.getContext('2d')
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       canvasImgRef.current = { img, ratio, cw: canvas.width, ch: canvas.height }
-      if (markerPos?.ratio) {
-        const px = markerPos.ratio.x * canvas.width
-        const py = markerPos.ratio.y * canvas.height
-        setMarkerPos({ px: { x: px, y: py }, ratio: markerPos.ratio })
+      const mp = markerPosRef.current
+      if (mp?.ratio) {
+        const px = mp.ratio.x * canvas.width
+        const py = mp.ratio.y * canvas.height
+        setMarkerPos({ px: { x: px, y: py }, ratio: mp.ratio })
         drawMarker(ctx, px, py, canvas.width, canvas.height)
       }
     }
     img.src = imgSrc
-  }, [markerPos]) // eslint-disable-line
+  }, [])
 
   useEffect(() => {
     if (imagePreview) drawCanvas(imagePreview)
-  }, [imagePreview]) // eslint-disable-line
+  }, [drawCanvas, imagePreview])
+
+  useEffect(() => {
+    return () => { if (imagePreview && imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview) }
+  }, [imagePreview])
+
+  useEffect(() => {
+    return () => { if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview) }
+  }, [thumbnailPreview])
 
   function drawMarker(ctx, px, py, cw, ch) {
     if (!canvasImgRef.current) return
@@ -146,6 +161,7 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
     const file = e.target.files?.[0]
     if (!file) return
     setThumbnailFile(file)
+    setThumbnailPreview(URL.createObjectURL(file))
     setForm((f) => ({ ...f, thumbnail_name: file.name }))
   }
 
@@ -328,7 +344,7 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
               <label className="flex flex-col items-center justify-center gap-2 w-full h-28 sm:h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-brand-400 dark:hover:border-brand-500 transition-colors bg-gray-50 dark:bg-gray-800 active:bg-gray-100">
                 {thumbnailFile ? (
                   <img
-                    src={URL.createObjectURL(thumbnailFile)}
+                    src={thumbnailPreview}
                     alt="غلاف"
                     className="h-full w-full object-cover rounded-xl"
                   />

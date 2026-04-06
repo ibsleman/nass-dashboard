@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { uploadFile } from '../lib/supabase'
 
 const DEFAULT_ITEM = () => ({
@@ -20,6 +20,12 @@ export default function BulkUploadModal({ isOpen, onClose, onSave, category }) {
   const [progress, setProgress]   = useState({ done: 0, total: 0 })
   const [error, setError]         = useState('')
   const inputRef = useRef(null)
+  const itemsRef = useRef(items)
+
+  useEffect(() => { itemsRef.current = items }, [items])
+  useEffect(() => {
+    return () => { itemsRef.current.forEach(item => URL.revokeObjectURL(item.preview)) }
+  }, [])
 
   if (!isOpen) return null
 
@@ -41,7 +47,10 @@ export default function BulkUploadModal({ isOpen, onClose, onSave, category }) {
   }
 
   const removeItem = (idx) => {
-    setItems((prev) => prev.filter((_, i) => i !== idx))
+    setItems((prev) => {
+      URL.revokeObjectURL(prev[idx].preview)
+      return prev.filter((_, i) => i !== idx)
+    })
   }
 
   const handleUploadAll = async () => {
@@ -80,6 +89,7 @@ export default function BulkUploadModal({ isOpen, onClose, onSave, category }) {
         await onSave(payload, null)
         setProgress({ done: i + 1, total: items.length })
       }
+      items.forEach(item => URL.revokeObjectURL(item.preview))
       setItems([])
       onClose()
     } catch (err) {

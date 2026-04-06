@@ -8,8 +8,10 @@ import TemplateModal from '../components/TemplateModal'
 import BulkUploadModal from '../components/BulkUploadModal'
 import DeleteConfirm from '../components/DeleteConfirm'
 import { useTheme } from '../context/ThemeContext'
+import { extractStoragePath } from '../lib/cdn'
 import {
   fetchTemplates,
+  fetchTemplateCount,
   insertTemplate,
   updateTemplate,
   deleteTemplate,
@@ -42,8 +44,9 @@ export default function Dashboard() {
   const [deleting, setDeleting]           = useState(false)
 
   // Bulk selection
-  const [selectedIds, setSelectedIds]   = useState(new Set())
-  const [bulkLoading, setBulkLoading]   = useState(false)
+  const [selectedIds, setSelectedIds]       = useState(new Set())
+  const [bulkLoading, setBulkLoading]       = useState(false)
+  const [bulkDeletePending, setBulkDeletePending] = useState(false)
 
   // Toast
   const [toast, setToast] = useState(null)
@@ -78,8 +81,7 @@ export default function Dashboard() {
       await Promise.all(
         CATEGORIES.map(async (cat) => {
           try {
-            const data = await fetchTemplates(cat.key)
-            result[cat.key] = data.length
+            result[cat.key] = await fetchTemplateCount(cat.key)
           } catch { result[cat.key] = 0 }
         })
       )
@@ -126,17 +128,9 @@ export default function Dashboard() {
     if (!deleteTarget) return
     setDeleting(true)
     try {
-      const extractPath = (url) => {
-        if (!url) return null
-        try {
-          const u = new URL(url)
-          const parts = u.pathname.split('/storage/v1/object/public/templates/')
-          return parts[1] ?? null
-        } catch { return null }
-      }
       await Promise.all([
-        extractPath(deleteTarget.image_url) ? deleteFile(extractPath(deleteTarget.image_url)) : Promise.resolve(),
-        extractPath(deleteTarget.video_url) ? deleteFile(extractPath(deleteTarget.video_url)) : Promise.resolve(),
+        extractStoragePath(deleteTarget.image_url) ? deleteFile(extractStoragePath(deleteTarget.image_url)) : Promise.resolve(),
+        extractStoragePath(deleteTarget.video_url) ? deleteFile(extractStoragePath(deleteTarget.video_url)) : Promise.resolve(),
       ])
       await deleteTemplate(deleteTarget.id)
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id))
@@ -200,24 +194,20 @@ export default function Dashboard() {
   }
 
   // ─── Bulk delete ──────────────────────────────────────────────────────────
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return
+    setBulkDeletePending(true)
+  }
+
+  const executeBulkDelete = async () => {
     const ids = [...selectedIds]
-    if (!window.confirm(`هل تريد حذف ${ids.length} قالب؟ لا يمكن التراجع عن هذا الإجراء.`)) return
     setBulkLoading(true)
     try {
-      const extractPath = (url) => {
-        if (!url) return null
-        try {
-          const u = new URL(url)
-          const parts = u.pathname.split('/storage/v1/object/public/templates/')
-          return parts[1] ?? null
-        } catch { return null }
-      }
       const selectedTemplates = templates.filter((t) => ids.includes(t.id))
       await Promise.allSettled(
         selectedTemplates.flatMap((t) => [
-          extractPath(t.image_url) ? deleteFile(extractPath(t.image_url)) : null,
-          extractPath(t.video_url) ? deleteFile(extractPath(t.video_url)) : null,
+          extractStoragePath(t.image_url) ? deleteFile(extractStoragePath(t.image_url)) : null,
+          extractStoragePath(t.video_url) ? deleteFile(extractStoragePath(t.video_url)) : null,
         ].filter(Boolean))
       )
       await deleteTemplates(ids)
@@ -229,6 +219,7 @@ export default function Dashboard() {
       showToast('خطأ في الحذف: ' + err.message, 'error')
     } finally {
       setBulkLoading(false)
+      setBulkDeletePending(false)
     }
   }
 
@@ -544,6 +535,14 @@ export default function Dashboard() {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
         loading={deleting}
+      />
+
+      <DeleteConfirm
+        isOpen={bulkDeletePending}
+        templateName={`${selectedIds.size} قالب`}
+        onConfirm={executeBulkDelete}
+        onCancel={() => setBulkDeletePending(false)}
+        loading={bulkLoading}
       />
 
       {/* ══════════ Toast ══════════ */}

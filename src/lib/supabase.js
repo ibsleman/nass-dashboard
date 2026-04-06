@@ -49,6 +49,15 @@ export async function fetchTemplates(category) {
   return data
 }
 
+export async function fetchTemplateCount(category) {
+  const { count, error } = await supabase
+    .from('templates')
+    .select('id', { count: 'exact', head: true })
+    .eq('category', category)
+  if (error) throw error
+  return count ?? 0
+}
+
 export async function insertTemplate(payload) {
   const { data, error } = await supabase.from('templates').insert(payload).select().single()
   if (error) throw error

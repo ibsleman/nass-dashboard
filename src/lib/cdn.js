@@ -5,3 +5,16 @@ export const getCdnUrl = (url) => {
   if (!supabaseUrl || !cdnDomain) return url
   return url.replace(supabaseUrl, cdnDomain)
 }
+
+export function extractStoragePath(url) {
+  if (!url) return null
+  try {
+    const u = new URL(url)
+    const marker = '/storage/v1/object/public/templates/'
+    const idx = u.pathname.indexOf(marker)
+    if (idx === -1) return null
+    return u.pathname.slice(idx + marker.length)
+  } catch {
+    return null
+  }
+}

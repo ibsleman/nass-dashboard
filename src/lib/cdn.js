@@ -6,11 +6,11 @@ export const getCdnUrl = (url) => {
   return url.replace(supabaseUrl, cdnDomain)
 }
 
-export function extractStoragePath(url) {
+export function extractStoragePath(url, bucket = 'templates') {
   if (!url) return null
   try {
     const u = new URL(url)
-    const marker = '/storage/v1/object/public/templates/'
+    const marker = `/storage/v1/object/public/${bucket}/`
     const idx = u.pathname.indexOf(marker)
     if (idx === -1) return null
     return u.pathname.slice(idx + marker.length)

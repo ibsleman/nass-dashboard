@@ -33,7 +33,7 @@ export async function uploadFile(file, folder = 'images') {
 
 /** حذف ملف من Storage */
 export async function deleteFile(fileName) {
-  const { error } = await supabase.storage.from(BUCKET).remove([fileName])
+  const { error } = await supabaseAdmin.storage.from(BUCKET).remove([fileName])
   if (error) throw error
 }
 

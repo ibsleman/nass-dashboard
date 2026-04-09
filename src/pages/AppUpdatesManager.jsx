@@ -13,7 +13,7 @@ const EMPTY_FORM = {
   title: "",
   message: "",
   image_url: "",
-  type: "optional",
+  update_type: "optional",
 };
 
 function Toggle({ checked, onChange, disabled }) {
@@ -128,7 +128,7 @@ export default function AppUpdatesManager() {
         title:     form.title.trim(),
         message:   form.message.trim() || null,
         image_url: form.image_url || null,
-        type:      form.type,
+        update_type: form.update_type,
         is_active: false,
       });
       setUpdates((prev) => [created, ...prev]);
@@ -349,9 +349,9 @@ export default function AppUpdatesManager() {
                       style={{
                         display: "flex", alignItems: "center", gap: 7, cursor: "pointer",
                         padding: "8px 14px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-                        border: `2px solid ${form.type === value ? color : "#e5e7eb"}`,
-                        background: form.type === value ? color + "10" : "#fff",
-                        color: form.type === value ? color : "#6b7280",
+                        border: `2px solid ${form.update_type === value ? color : "#e5e7eb"}`,
+                        background: form.update_type === value ? color + "10" : "#fff",
+                        color: form.update_type === value ? color : "#6b7280",
                         transition: "all .15s",
                       }}
                     >
@@ -359,8 +359,8 @@ export default function AppUpdatesManager() {
                         type="radio"
                         name="update_type"
                         value={value}
-                        checked={form.type === value}
-                        onChange={() => setForm({ ...form, type: value })}
+                        checked={form.update_type === value}
+                        onChange={() => setForm({ ...form, update_type: value })}
                         style={{ accentColor: color }}
                       />
                       {label}
@@ -460,8 +460,8 @@ export default function AppUpdatesManager() {
 
                 {/* Type badge */}
                 <div>
-                  <Badge color={update.type === "forced" ? "red" : "blue"}>
-                    {update.type === "forced" ? "إجباري" : "اختياري"}
+                  <Badge color={update.update_type === "forced" ? "red" : "blue"}>
+                    {update.update_type === "forced" ? "إجباري" : "اختياري"}
                   </Badge>
                 </div>
 

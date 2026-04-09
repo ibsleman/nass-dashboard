@@ -89,7 +89,7 @@ export default function CategoriesPage() {
       </div>
 
       {message && (
-        <div style={{ background: "#d1fae5", color: "#065f46", padding: "10px 16px", borderRadius: "8px", marginBottom: "16px", textAlign: "center" }}>
+        <div style={{ background: "#0d2e1f", color: "#34d399", padding: "10px 16px", borderRadius: "8px", marginBottom: "16px", textAlign: "center" }}>
           {message}
         </div>
       )}
@@ -102,26 +102,26 @@ export default function CategoriesPage() {
               display: "flex",
               alignItems: "center",
               gap: "12px",
-              background: cat.is_active ? "#fff" : "#f9fafb",
-              border: "1px solid #e5e7eb",
+              background: cat.is_active ? "#1e2130" : "#161822",
+              border: "1px solid #2e3148",
               borderRadius: "10px",
               padding: "12px 16px",
               opacity: cat.is_active ? 1 : 0.5,
             }}
           >
-            <span style={{ color: "#9ca3af", fontWeight: "600", width: "24px", textAlign: "center" }}>
+            <span style={{ color: "#6b7280", fontWeight: "600", width: "24px", textAlign: "center" }}>
               {index + 1}
             </span>
 
-            <span style={{ flex: 1, fontWeight: "600", fontSize: "15px" }}>
+            <span style={{ flex: 1, fontWeight: "600", fontSize: "15px", color: "#e2e8f0" }}>
               {CATEGORY_LABELS[cat.key] || cat.name_ar}
             </span>
 
             <button
               onClick={() => toggleActive(index)}
               style={{
-                background: cat.is_active ? "#d1fae5" : "#fee2e2",
-                color: cat.is_active ? "#065f46" : "#991b1b",
+                background: cat.is_active ? "#0d2e1f" : "#2d1515",
+                color: cat.is_active ? "#34d399" : "#f87171",
                 border: "none",
                 borderRadius: "6px",
                 padding: "4px 10px",
@@ -138,11 +138,12 @@ export default function CategoriesPage() {
                 onClick={() => moveUp(index)}
                 disabled={index === 0}
                 style={{
-                  background: "none",
-                  border: "1px solid #e5e7eb",
+                  background: "#2e3148",
+                  border: "1px solid #3d4166",
                   borderRadius: "4px",
                   width: "28px",
                   height: "28px",
+                  color: "#9ca3af",
                   cursor: index === 0 ? "not-allowed" : "pointer",
                   opacity: index === 0 ? 0.3 : 1,
                   fontSize: "12px",
@@ -154,11 +155,12 @@ export default function CategoriesPage() {
                 onClick={() => moveDown(index)}
                 disabled={index === categories.length - 1}
                 style={{
-                  background: "none",
-                  border: "1px solid #e5e7eb",
+                  background: "#2e3148",
+                  border: "1px solid #3d4166",
                   borderRadius: "4px",
                   width: "28px",
                   height: "28px",
+                  color: "#9ca3af",
                   cursor: index === categories.length - 1 ? "not-allowed" : "pointer",
                   opacity: index === categories.length - 1 ? 0.3 : 1,
                   fontSize: "12px",

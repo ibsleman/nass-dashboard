@@ -192,11 +192,12 @@ export default function AppUpdatesManager() {
 
   // ── styles ────────────────────────────────────────────────────────────────
   const card = {
-    background: "#fff",
-    border: "1px solid #e5e7eb",
-    borderRadius: 14,
+    background: "#0f0f1a",
+    border: "1px solid rgba(124,58,237,0.25)",
+    borderRadius: 16,
     padding: "20px 24px",
     marginBottom: 16,
+    boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
   };
 
   const row = {
@@ -245,7 +246,7 @@ export default function AppUpdatesManager() {
     <div style={{ maxWidth: 840, margin: "0 auto", padding: "24px 16px", direction: "rtl" }}>
       <style>{`
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-        .update-row:hover{background:#f9fafb!important}
+        .update-row:hover{background:rgba(124,58,237,0.06)!important}
       `}</style>
 
       {/* ── Header ── */}
@@ -266,40 +267,72 @@ export default function AppUpdatesManager() {
 
       {/* ── Add Form ── */}
       {showForm && (
-        <div style={{ ...card, animation: "fadeIn .2s ease", borderColor: "#7c3aed", borderWidth: 1.5 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 18 }}>نشر تحديث جديد</div>
-          <div style={{ display: "grid", gap: 14 }}>
+        <div style={{
+          background: "#0f0f1a",
+          border: "1px solid rgba(124,58,237,0.4)",
+          borderRadius: 16,
+          padding: "24px 28px",
+          marginBottom: 24,
+          animation: "fadeIn .2s ease",
+          boxShadow: "0 0 0 1px rgba(124,58,237,0.15), 0 8px 32px rgba(0,0,0,0.5)",
+        }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "#fff" }}>نشر تحديث جديد</div>
+          <div style={{ display: "grid", gap: 16 }}>
 
             {/* Version + Title */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
               <div>
-                <label style={lbl}>رقم الإصدار *</label>
+                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>رقم الإصدار *</label>
                 <input
-                  style={inp}
+                  style={{
+                    width: "100%", padding: "10px 13px",
+                    background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 10, fontSize: 14, outline: "none",
+                    boxSizing: "border-box", fontFamily: "inherit",
+                    color: "#fff", transition: "border-color .15s",
+                  }}
                   value={form.version}
                   onChange={(e) => setForm({ ...form, version: e.target.value })}
                   placeholder="1.0.0"
+                  onFocus={(e) => e.target.style.borderColor = "rgba(124,58,237,0.6)"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
                 />
               </div>
               <div>
-                <label style={lbl}>عنوان التحديث *</label>
+                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>عنوان التحديث *</label>
                 <input
-                  style={inp}
+                  style={{
+                    width: "100%", padding: "10px 13px",
+                    background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 10, fontSize: 14, outline: "none",
+                    boxSizing: "border-box", fontFamily: "inherit",
+                    color: "#fff", transition: "border-color .15s",
+                  }}
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="ما الجديد في هذا الإصدار؟"
+                  onFocus={(e) => e.target.style.borderColor = "rgba(124,58,237,0.6)"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
                 />
               </div>
             </div>
 
             {/* Message */}
             <div>
-              <label style={lbl}>رسالة / وصف</label>
+              <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>رسالة / وصف</label>
               <textarea
-                style={{ ...inp, minHeight: 90, resize: "vertical", lineHeight: 1.6 }}
+                style={{
+                  width: "100%", padding: "10px 13px", minHeight: 90, resize: "vertical", lineHeight: 1.6,
+                  background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 10, fontSize: 14, outline: "none",
+                  boxSizing: "border-box", fontFamily: "inherit",
+                  color: "#fff", transition: "border-color .15s",
+                }}
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
                 placeholder="اكتب تفاصيل التحديث هنا…"
+                onFocus={(e) => e.target.style.borderColor = "rgba(124,58,237,0.6)"}
+                onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
               />
             </div>
 
@@ -307,7 +340,7 @@ export default function AppUpdatesManager() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Image upload */}
               <div>
-                <label style={lbl}>صورة التحديث (اختياري)</label>
+                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>صورة التحديث (اختياري)</label>
                 <input
                   ref={imageInputRef}
                   type="file"
@@ -315,69 +348,95 @@ export default function AppUpdatesManager() {
                   style={{ display: "none" }}
                   onChange={handleImageUpload}
                 />
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button
-                    style={{ ...btn("ghost"), padding: "9px 16px", fontSize: 13 }}
-                    disabled={uploading}
-                    onClick={() => imageInputRef.current?.click()}
-                  >
-                    {uploading ? "جارٍ الرفع…" : "رفع صورة"}
-                  </button>
-                  {form.image_url && (
-                    <span style={{ fontSize: 12, color: "#16a34a" }}>✓ تم الرفع</span>
+                <div
+                  onClick={() => !uploading && imageInputRef.current?.click()}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    padding: "10px 16px", borderRadius: 10, cursor: uploading ? "not-allowed" : "pointer",
+                    border: "1px dashed rgba(124,58,237,0.5)",
+                    background: form.image_url ? "rgba(124,58,237,0.08)" : "rgba(255,255,255,0.03)",
+                    color: form.image_url ? "#a78bfa" : "#a0a0b0",
+                    fontSize: 13, fontWeight: 500, transition: "all .15s",
+                  }}
+                >
+                  {uploading ? (
+                    <span>جارٍ الرفع…</span>
+                  ) : form.image_url ? (
+                    <span>✓ تم رفع الصورة</span>
+                  ) : (
+                    <span>اختر صورة للرفع</span>
                   )}
                 </div>
                 {form.image_url && (
                   <img
                     src={form.image_url}
                     alt="preview"
-                    style={{ marginTop: 8, height: 60, borderRadius: 8, objectFit: "cover", border: "1px solid #e5e7eb" }}
+                    style={{ marginTop: 8, height: 60, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(124,58,237,0.3)" }}
                   />
                 )}
               </div>
 
               {/* Type */}
               <div>
-                <label style={lbl}>نوع التحديث</label>
+                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>نوع التحديث</label>
                 <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                   {[
-                    { value: "optional", label: "اختياري", color: "#1d4ed8" },
-                    { value: "forced",   label: "إجباري",   color: "#dc2626" },
-                  ].map(({ value, label, color }) => (
-                    <label
-                      key={value}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 7, cursor: "pointer",
-                        padding: "8px 14px", borderRadius: 8, fontSize: 14, fontWeight: 600,
-                        border: `2px solid ${form.update_type === value ? color : "#e5e7eb"}`,
-                        background: form.update_type === value ? color + "10" : "#fff",
-                        color: form.update_type === value ? color : "#6b7280",
-                        transition: "all .15s",
-                      }}
-                    >
-                      <input
-                        type="radio"
-                        name="update_type"
-                        value={value}
-                        checked={form.update_type === value}
-                        onChange={() => setForm({ ...form, update_type: value })}
-                        style={{ accentColor: color }}
-                      />
-                      {label}
-                    </label>
-                  ))}
+                    { value: "optional", label: "اختياري", activeColor: "#7c3aed", activeBg: "rgba(124,58,237,0.15)" },
+                    { value: "forced",   label: "إجباري",   activeColor: "#ef4444", activeBg: "rgba(239,68,68,0.12)" },
+                  ].map(({ value, label, activeColor, activeBg }) => {
+                    const isSelected = form.update_type === value;
+                    return (
+                      <label
+                        key={value}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+                          padding: "9px 16px", borderRadius: 10, fontSize: 14, fontWeight: 600,
+                          border: `2px solid ${isSelected ? activeColor : "rgba(255,255,255,0.1)"}`,
+                          background: isSelected ? activeBg : "rgba(255,255,255,0.03)",
+                          color: isSelected ? activeColor : "#6b7280",
+                          transition: "all .15s", flex: 1, justifyContent: "center",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="update_type"
+                          value={value}
+                          checked={isSelected}
+                          onChange={() => setForm({ ...form, update_type: value })}
+                          style={{ accentColor: activeColor, width: 15, height: 15 }}
+                        />
+                        {label}
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-            <button onClick={() => setShowForm(false)} style={btn("ghost")}>إلغاء</button>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
+            <button
+              onClick={() => setShowForm(false)}
+              style={{
+                padding: "9px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: "pointer",
+                background: "transparent", border: "1px solid rgba(255,255,255,0.15)",
+                color: "#a0a0b0", transition: "all .15s",
+              }}
+            >
+              إلغاء
+            </button>
             <button
               onClick={handlePublish}
               disabled={saving || uploading}
-              style={{ ...btn("primary"), opacity: saving || uploading ? 0.7 : 1 }}
+              style={{
+                padding: "9px 22px", borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: saving || uploading ? "not-allowed" : "pointer",
+                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                border: "none", color: "#fff",
+                opacity: saving || uploading ? 0.65 : 1,
+                boxShadow: saving || uploading ? "none" : "0 4px 14px rgba(124,58,237,0.4)",
+                transition: "all .15s",
+              }}
             >
               {saving ? "جارٍ النشر…" : "نشر التحديث"}
             </button>
@@ -387,15 +446,15 @@ export default function AppUpdatesManager() {
 
       {/* ── Updates Table ── */}
       <div style={card}>
-        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#fff" }}>
           سجل التحديثات
         </div>
-        <div style={{ fontSize: 13, color: "#9ca3af", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#6b6b8a", marginBottom: 16 }}>
           {updates.length} تحديث — تحديث واحد فقط يكون نشطاً في نفس الوقت
         </div>
 
         {updates.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "48px 0", color: "#d1d5db", fontSize: 14 }}>
+          <div style={{ textAlign: "center", padding: "48px 0", color: "#3d3d5c", fontSize: 14 }}>
             لا توجد تحديثات بعد — أضف أول تحديث من الأعلى
           </div>
         ) : (
@@ -408,8 +467,8 @@ export default function AppUpdatesManager() {
               padding: "8px 12px",
               fontSize: 12,
               fontWeight: 700,
-              color: "#9ca3af",
-              borderBottom: "2px solid #f3f4f6",
+              color: "#6b6b8a",
+              borderBottom: "1px solid rgba(255,255,255,0.07)",
             }}>
               <span>الإصدار</span>
               <span>التحديث</span>
@@ -429,15 +488,15 @@ export default function AppUpdatesManager() {
                   gap: 10,
                   alignItems: "center",
                   padding: "14px 12px",
-                  borderBottom: "1px solid #f9fafb",
+                  borderBottom: "1px solid rgba(255,255,255,0.05)",
                   borderRadius: 8,
                   transition: "background .15s",
                 }}
               >
                 {/* Version */}
                 <div style={{
-                  fontSize: 13, fontWeight: 700, color: "#7c3aed",
-                  background: "#f5f3ff", padding: "3px 8px",
+                  fontSize: 13, fontWeight: 700, color: "#a78bfa",
+                  background: "rgba(124,58,237,0.18)", padding: "3px 8px",
                   borderRadius: 6, textAlign: "center", width: "fit-content",
                 }}>
                   {update.version}
@@ -445,7 +504,7 @@ export default function AppUpdatesManager() {
 
                 {/* Title + message */}
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#111827", marginBottom: 2 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e7eb", marginBottom: 2 }}>
                     {update.title}
                   </div>
                   {update.message && (
@@ -501,14 +560,22 @@ export default function AppUpdatesManager() {
           display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
         }}>
           <div style={{ ...card, maxWidth: 380, margin: 0, animation: "fadeIn .2s ease" }}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>حذف التحديث؟</div>
-            <div style={{ color: "#6b7280", fontSize: 14, marginBottom: 20 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "#fff" }}>حذف التحديث؟</div>
+            <div style={{ color: "#a0a0b0", fontSize: 14, marginBottom: 20 }}>
               سيتم حذف الإصدار{" "}
-              <strong style={{ color: "#7c3aed" }}>{updateToDelete?.version}</strong>{" "}
+              <strong style={{ color: "#a78bfa" }}>{updateToDelete?.version}</strong>{" "}
               ("{updateToDelete?.title}") نهائياً.
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setConfirmDelete(null)} style={btn("ghost")}>إلغاء</button>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                style={{
+                  padding: "8px 18px", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer",
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#a0a0b0",
+                }}
+              >
+                إلغاء
+              </button>
               <button onClick={() => handleDelete(confirmDelete)} style={btn("danger")}>حذف</button>
             </div>
           </div>

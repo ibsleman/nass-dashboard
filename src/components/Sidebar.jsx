@@ -12,9 +12,10 @@ const CATEGORIES = [
   { key: 'invitations', label: 'دعوات',       emoji: '✉️' },
   { key: 'promotion',  label: 'ترقية وتكريم', emoji: '🏅' },
   { key: 'condolences', label: 'تعزية',       emoji: '🕊️' },
-  { key: '__ads__',        label: 'الإعلانات',    emoji: '📢' },
-  { key: '__updates__',   label: 'التحديثات',    emoji: '🔄' },
-  { key: '__categories__', label: 'الأقسام',      emoji: '⚙️' },
+  { key: '__ads__',           label: 'الإعلانات',  emoji: '📢' },
+  { key: '__updates__',      label: 'التحديثات',  emoji: '🔄' },
+  { key: '__categories__',   label: 'الأقسام',    emoji: '⚙️' },
+  { key: '__notifications__', label: 'الإشعارات', emoji: '🔔' },
 ]
 
 export { CATEGORIES }

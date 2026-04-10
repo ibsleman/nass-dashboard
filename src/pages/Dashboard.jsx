@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import AdsManager from './AdsManager'
 import AppUpdatesManager from './AppUpdatesManager'
 import CategoriesPage from './CategoriesPage'
+import NotificationsManager from './NotificationsManager'
 import Sidebar, { CATEGORIES } from '../components/Sidebar'
 import FilterBar from '../components/FilterBar'
 import TemplateCard from '../components/TemplateCard'
@@ -25,9 +26,10 @@ export default function Dashboard() {
   const { isDark, toggleTheme } = useTheme()
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0].key)
-  const isAdsPage        = activeCategory === '__ads__'
-  const isUpdatesPage    = activeCategory === '__updates__'
-  const isCategoriesPage = activeCategory === '__categories__'
+  const isAdsPage           = activeCategory === '__ads__'
+  const isUpdatesPage       = activeCategory === '__updates__'
+  const isCategoriesPage    = activeCategory === '__categories__'
+  const isNotificationsPage = activeCategory === '__notifications__'
   const [templates, setTemplates]           = useState([])
   const [loading, setLoading]               = useState(false)
   const [typeFilter, setTypeFilter]         = useState('all')
@@ -378,6 +380,8 @@ export default function Dashboard() {
             <AppUpdatesManager />
           ) : isCategoriesPage ? (
             <CategoriesPage />
+          ) : isNotificationsPage ? (
+            <NotificationsManager />
           ) : (
             <div className="p-3 sm:p-4 md:p-6">
 

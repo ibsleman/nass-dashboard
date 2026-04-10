@@ -187,7 +187,7 @@ export default function NotificationsManager() {
     const payload = {
       title: form.title.trim(),
       body: form.body.trim(),
-      target: form.target,
+      target_type: form.target,
       target_country: form.target === "country" ? form.country : null,
       status: form.schedule ? "scheduled" : "pending",
       scheduled_at: form.schedule ? new Date(form.scheduled_at).toISOString() : null,
@@ -541,7 +541,7 @@ export default function NotificationsManager() {
                         </div>
                       </td>
                       <td style={tdStyle}>
-                        {n.target === "all" ? (
+                        {n.target_type === "all" ? (
                           <span style={{ color: "#9ca3af", fontSize: 13 }}>🌍 الكل</span>
                         ) : (
                           <span style={{ fontSize: 13 }}>

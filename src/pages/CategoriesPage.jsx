@@ -56,10 +56,18 @@ export default function CategoriesPage() {
     setSaving(true);
     setMessage("");
     for (const cat of categories) {
-      await supabase
+      const { data, error, count } = await supabase
         .from("categories")
         .update({ display_order: cat.display_order, is_active: cat.is_active })
-        .eq("id", cat.id);
+        .eq("id", cat.id)
+        .select();
+      console.log(`update [${cat.key}]:`, { data, error, count });
+      if (error) {
+        console.error("❌ save error for", cat.key, error);
+        setSaving(false);
+        setMessage("خطأ في الحفظ: " + error.message);
+        return;
+      }
     }
     setSaving(false);
     setMessage("تم الحفظ ✓");

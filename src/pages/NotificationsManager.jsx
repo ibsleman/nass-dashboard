@@ -188,7 +188,7 @@ export default function NotificationsManager() {
       title: form.title.trim(),
       body: form.body.trim(),
       target: form.target,
-      country: form.target === "country" ? form.country : null,
+      target_country: form.target === "country" ? form.country : null,
       status: form.schedule ? "scheduled" : "pending",
       scheduled_at: form.schedule ? new Date(form.scheduled_at).toISOString() : null,
     };
@@ -545,7 +545,7 @@ export default function NotificationsManager() {
                           <span style={{ color: "#9ca3af", fontSize: 13 }}>🌍 الكل</span>
                         ) : (
                           <span style={{ fontSize: 13 }}>
-                            {COUNTRY_FLAG[n.country] || "🏳"} {n.country}
+                            {COUNTRY_FLAG[n.target_country] || "🏳"} {n.target_country}
                           </span>
                         )}
                       </td>

@@ -170,6 +170,8 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       return setError('يرجى رفع صورة')
     if (form.type === 'video' && !videoFile && !editTemplate?.video_url)
       return setError('يرجى رفع ملف فيديو')
+    if (form.type === 'imageWithPhoto' && form.name_position_x == null)
+      return setError('يرجى تحديد موضع الاسم على الصورة بالضغط عليها')
 
     setUploading(true)
     try {
@@ -370,6 +372,9 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 موضع الاسم
+                {form.type === 'imageWithPhoto' && (
+                  <span className="text-red-500 mr-1">*</span>
+                )}
                 <span className="text-xs font-normal text-gray-400 dark:text-gray-500 mr-2">
                   (اضغط على الصورة لتحديد الموضع)
                 </span>

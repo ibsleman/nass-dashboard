@@ -1,9 +1,12 @@
 export const getCdnUrl = (url) => {
   if (!url) return url
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
   const cdnDomain = import.meta.env.VITE_CDN_DOMAIN
-  if (!supabaseUrl || !cdnDomain) return url
-  return url.replace(`${supabaseUrl}/storage/v1/object/public/`, `${cdnDomain}/`)
+  if (!cdnDomain) return url
+  const base = cdnDomain.replace(/\/$/, '')
+  return url.replace(
+    /https:\/\/[^/]+\.supabase\.co\/storage\/v1\/object\/public\//,
+    `${base}/`
+  )
 }
 
 export function extractStoragePath(url, bucket = 'templates') {

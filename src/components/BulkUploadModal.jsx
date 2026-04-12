@@ -70,8 +70,8 @@ export default function BulkUploadModal({ isOpen, onClose, onSave, category }) {
           category,
           is_premium:       item.is_premium,
           text_appear_time: item.text_appear_time !== '' ? parseFloat(item.text_appear_time) : null,
-          name_position_x:  item.name_position_x  !== '' ? parseFloat(item.name_position_x)  : null,
-          name_position_y:  item.name_position_y  !== '' ? parseFloat(item.name_position_y)  : null,
+          name_position_x:  item.name_position_x  !== '' ? parseFloat(item.name_position_x) / 100 : null,
+          name_position_y:  item.name_position_y  !== '' ? parseFloat(item.name_position_y) / 100 : null,
         }
 
         if (item.type === 'video') {

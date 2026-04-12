@@ -9,7 +9,6 @@ const EMPTY_FORM = {
   name_position_x:  null,
   name_position_y:  null,
   text_appear_time: '',
-  thumbnail_name:   '',
 }
 
 export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, category }) {
@@ -39,7 +38,6 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
         name_position_x:  editTemplate.name_position_x  ?? null,
         name_position_y:  editTemplate.name_position_y  ?? null,
         text_appear_time: editTemplate.text_appear_time ?? '',
-        thumbnail_name:   editTemplate.thumbnail_name   ?? '',
       })
       setImagePreview(editTemplate.image_url ?? null)
       setImageFile(null)
@@ -162,7 +160,6 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
     if (!file) return
     setThumbnailFile(file)
     setThumbnailPreview(URL.createObjectURL(file))
-    setForm((f) => ({ ...f, thumbnail_name: file.name }))
   }
 
   // ─── Submit ───────────────────────────────────────────────────────────────
@@ -201,12 +198,10 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
         payload.video_name = form.video_name || editTemplate?.video_name || null
       }
       if (thumbnailFile) {
-        const { publicUrl, fileName } = await uploadFile(thumbnailFile, 'thumbnails')
-        payload.thumbnail_url  = publicUrl
-        payload.thumbnail_name = fileName.split('/').pop()
+        const { publicUrl } = await uploadFile(thumbnailFile, 'thumbnails')
+        payload.thumbnail_url = publicUrl
       } else {
-        payload.thumbnail_url  = editTemplate?.thumbnail_url  ?? null
-        payload.thumbnail_name = form.thumbnail_name || editTemplate?.thumbnail_name || null
+        payload.thumbnail_url = editTemplate?.thumbnail_url ?? null
       }
       await onSave(payload, editTemplate?.id ?? null)
       onClose()

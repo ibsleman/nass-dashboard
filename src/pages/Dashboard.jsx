@@ -3,6 +3,7 @@ import AdsManager from './AdsManager'
 import AppUpdatesManager from './AppUpdatesManager'
 import CategoriesPage from './CategoriesPage'
 import NotificationsManager from './NotificationsManager'
+import AnalyticsPage from './AnalyticsPage'
 import Sidebar, { CATEGORIES } from '../components/Sidebar'
 import FilterBar from '../components/FilterBar'
 import TemplateCard from '../components/TemplateCard'
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const isUpdatesPage       = activeCategory === '__updates__'
   const isCategoriesPage    = activeCategory === '__categories__'
   const isNotificationsPage = activeCategory === '__notifications__'
+  const isAnalyticsPage     = activeCategory === '__analytics__'
   const [templates, setTemplates]           = useState([])
   const [loading, setLoading]               = useState(false)
   const [typeFilter, setTypeFilter]         = useState('all')
@@ -382,6 +384,8 @@ export default function Dashboard() {
             <CategoriesPage />
           ) : isNotificationsPage ? (
             <NotificationsManager />
+          ) : isAnalyticsPage ? (
+            <AnalyticsPage />
           ) : (
             <div className="p-3 sm:p-4 md:p-6">
 

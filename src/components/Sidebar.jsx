@@ -16,6 +16,7 @@ const CATEGORIES = [
   { key: '__updates__',      label: 'التحديثات',  emoji: '🔄' },
   { key: '__categories__',   label: 'الأقسام',    emoji: '⚙️' },
   { key: '__notifications__', label: 'الإشعارات', emoji: '🔔' },
+  { key: '__analytics__',    label: 'التحليلات',  emoji: '📊' },
 ]
 
 export { CATEGORIES }

@@ -218,6 +218,38 @@ body {
 /* Category bars */
 .cat-grid { display: flex; flex-direction: column; gap: 10px; }
 
+/* Custom range picker */
+.custom-picker {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center;
+}
+.custom-picker.open { display: flex; }
+.picker-box {
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 14px;
+  padding: 24px; width: 400px; max-width: 90vw;
+}
+.picker-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 20px; }
+.picker-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.picker-field { display: flex; flex-direction: column; gap: 6px; }
+.picker-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.picker-input {
+  background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px;
+  padding: 9px 12px; color: var(--text); font-size: 13px; font-family: inherit;
+  outline: none; width: 100%;
+}
+.picker-input:focus { border-color: var(--accent); }
+.picker-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+.picker-cancel {
+  padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.picker-apply {
+  padding: 8px 18px; border-radius: 8px; border: none;
+  background: var(--accent); color: #fff; font-size: 13px; cursor: pointer; font-family: inherit;
+  font-weight: 500;
+}
+.range-label { font-size: 11px; color: var(--accent); background: var(--accent-dim); padding: 3px 9px; border-radius: 20px; }
+
 /* Loading */
 .loading { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; }
 .spinner {
@@ -274,13 +306,37 @@ body {
 
 <!-- Main -->
 <div class="main">
+  <!-- Custom date picker modal -->
+  <div class="custom-picker" id="custom-picker">
+    <div class="picker-box">
+      <div class="picker-title">📅 نطاق زمني مخصص</div>
+      <div class="picker-row">
+        <div class="picker-field">
+          <div class="picker-label">من</div>
+          <input class="picker-input" type="datetime-local" id="picker-from">
+        </div>
+        <div class="picker-field">
+          <div class="picker-label">إلى</div>
+          <input class="picker-input" type="datetime-local" id="picker-to">
+        </div>
+      </div>
+      <div class="picker-actions">
+        <button class="picker-cancel" onclick="closePicker()">إلغاء</button>
+        <button class="picker-apply" onclick="applyCustomRange()">تطبيق</button>
+      </div>
+    </div>
+  </div>
+
   <div class="topbar">
     <div class="topbar-title" id="page-title">نظرة عامة</div>
     <div class="topbar-right">
       <div class="period-btns">
+        <button class="period-btn" onclick="setPeriodHours(1,this)">ساعة</button>
+        <button class="period-btn" onclick="setPeriodHours(24,this)">٢٤ ساعة</button>
         <button class="period-btn active" onclick="setPeriod(7,this)">٧ أيام</button>
         <button class="period-btn" onclick="setPeriod(30,this)">٣٠ يوم</button>
         <button class="period-btn" onclick="setPeriod(90,this)">٩٠ يوم</button>
+        <button class="period-btn" onclick="openPicker()">مخصص 📅</button>
       </div>
       <button class="refresh-btn" onclick="loadAll()">↻ تحديث</button>
       <span class="last-update" id="last-update"></span>
@@ -391,6 +447,50 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentDays = 7;
+let customFrom = null;
+let customTo = null;
+
+function getRange() {
+  if (customFrom && customTo) return { from: customFrom, to: customTo };
+  const to = new Date();
+  const from = new Date(Date.now() - currentDays * 86400000);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function getRangeLabel() {
+  if (customFrom && customTo) {
+    const f = new Date(customFrom).toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const t = new Date(customTo).toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return f + ' ← ' + t;
+  }
+  if (currentDays < 1) return 'آخر ' + Math.round(currentDays*24) + ' ساعة';
+  return 'آخر ' + currentDays + ' ' + (currentDays === 1 ? 'يوم' : 'أيام');
+}
+
+function openPicker() {
+  const now = new Date();
+  const weekAgo = new Date(Date.now() - 7*86400000);
+  const fmt = d => d.toISOString().slice(0,16);
+  document.getElementById('picker-from').value = fmt(weekAgo);
+  document.getElementById('picker-to').value = fmt(now);
+  document.getElementById('custom-picker').classList.add('open');
+}
+
+function closePicker() {
+  document.getElementById('custom-picker').classList.remove('open');
+}
+
+function applyCustomRange() {
+  const from = document.getElementById('picker-from').value;
+  const to = document.getElementById('picker-to').value;
+  if (!from || !to) return;
+  customFrom = new Date(from).toISOString();
+  customTo = new Date(to).toISOString();
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[onclick="openPicker()"]').classList.add('active');
+  closePicker();
+  loadAll();
+}
 const titles = { overview:'نظرة عامة', templates:'القوالب', funnel:'مسار المستخدم', events:'الأحداث', errors:'الأخطاء' };
 
 const catNames = {
@@ -417,6 +517,15 @@ function showPage(id, el) {
 
 function setPeriod(days, btn) {
   currentDays = days;
+  customFrom = null; customTo = null;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAll();
+}
+
+function setPeriodHours(hours, btn) {
+  currentDays = hours / 24;
+  customFrom = null; customTo = null;
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   loadAll();
@@ -438,15 +547,15 @@ function barChart(data, colorKey, maxVal) {
 }
 
 async function loadOverview() {
-  const since = new Date(Date.now() - currentDays*86400000).toISOString();
+  const { from: since, to: rangeEnd } = getRange();
 
   const [sessRes, evRes, saveRes, shareRes, viewRes, photoRes] = await Promise.all([
-    sb.from('user_sessions').select('id', {count:'exact',head:true}).gte('created_at',since),
-    sb.from('analytics_events').select('session_id', {count:'exact',head:true}).gte('created_at',since),
-    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','template_saved').gte('created_at',since),
-    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','template_shared').gte('created_at',since),
-    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','template_viewed').gte('created_at',since),
-    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','photo_uploaded').gte('created_at',since),
+    sb.from('user_sessions').select('id', {count:'exact',head:true}).gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('analytics_events').select('session_id', {count:'exact',head:true}).gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','template_saved').gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','template_shared').gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','template_viewed').gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name','photo_uploaded').gte('created_at',since).lte('created_at',rangeEnd),
   ]);
 
   const sessions = sessRes.count || 0;
@@ -483,7 +592,7 @@ async function loadOverview() {
     await sb.from('analytics_events').select('created_at').gte('created_at', since).limit(5000) :
     await sb.from('analytics_events').select('created_at').gte('created_at', since).limit(5000);
   
-  const { data: hourRows } = await sb.from('analytics_events').select('created_at').gte('created_at',since).limit(5000);
+  const { data: hourRows } = await sb.from('analytics_events').select('created_at').gte('created_at',since).lte('created_at',rangeEnd).limit(5000);
   
   const hourCounts = new Array(24).fill(0);
   (hourRows||[]).forEach(r => {
@@ -504,7 +613,7 @@ async function loadOverview() {
     <div class="hour-labels">${labels}</div>`;
 
   // iOS versions
-  const { data: iosRows } = await sb.from('user_sessions').select('ios_version').gte('created_at',since).limit(5000);
+  const { data: iosRows } = await sb.from('user_sessions').select('ios_version').gte('created_at',since).lte('created_at',rangeEnd).limit(5000);
   const iosCounts = {};
   (iosRows||[]).forEach(r => {
     const v = r.ios_version || 'Unknown';
@@ -516,7 +625,7 @@ async function loadOverview() {
 }
 
 async function loadTemplates() {
-  const since = new Date(Date.now() - currentDays*86400000).toISOString();
+  const { from: since, to: rangeEnd } = getRange();
   
   // Top templates with stats
   const { data: rows } = await sb.from('analytics_events')
@@ -607,14 +716,14 @@ async function loadTemplates() {
 }
 
 async function loadFunnel() {
-  const since = new Date(Date.now() - currentDays*86400000).toISOString();
+  const { from: since, to: rangeEnd } = getRange();
   
   const events = ['app_opened','template_viewed','template_selected','photo_uploaded','template_saved','template_shared'];
   const arNames = ['فتح التطبيق','مشاهدة قالب','اختيار قالب','رفع صورة','حفظ القالب','المشاركة'];
   const fColors = ['#7c6ef5','#4a9ef5','#3dbdb5','#3ec98e','#f0a347','#e06fa0'];
   
   const counts = await Promise.all(events.map(e =>
-    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name',e).gte('created_at',since)
+    sb.from('analytics_events').select('id',{count:'exact',head:true}).eq('event_name',e).gte('created_at',since).lte('created_at',rangeEnd)
   ));
   const vals = counts.map(r => r.count||0);
   const max = Math.max(...vals);
@@ -652,9 +761,9 @@ async function loadFunnel() {
 }
 
 async function loadEvents() {
-  const since = new Date(Date.now() - currentDays*86400000).toISOString();
+  const { from: since, to: rangeEnd } = getRange();
   
-  const { data: rows } = await sb.from('analytics_events').select('event_name').gte('created_at',since).limit(10000);
+  const { data: rows } = await sb.from('analytics_events').select('event_name').gte('created_at',since).lte('created_at',rangeEnd).limit(10000);
   
   const counts = {};
   (rows||[]).forEach(r => { counts[r.event_name] = (counts[r.event_name]||0)+1; });
@@ -677,7 +786,7 @@ async function loadEvents() {
     </div>`).join('')}</div>`;
 
   // Devices
-  const { data: devRows } = await sb.from('user_sessions').select('device_model').gte('created_at',since).limit(5000);
+  const { data: devRows } = await sb.from('user_sessions').select('device_model').gte('created_at',since).lte('created_at',rangeEnd).limit(5000);
   const devCounts = {};
   (devRows||[]).forEach(r => {
     const m = r.device_model||'Unknown';
@@ -688,12 +797,12 @@ async function loadEvents() {
 }
 
 async function loadErrors() {
-  const since = new Date(Date.now() - currentDays*86400000).toISOString();
+  const { from: since, to: rangeEnd } = getRange();
   
   const { data: rows } = await sb.from('analytics_events')
     .select('metadata, created_at')
     .eq('event_name','error_occurred')
-    .gte('created_at',since)
+    .gte('created_at',since).lte('created_at',rangeEnd)
     .limit(2000);
   
   const total = rows?.length || 0;
@@ -746,7 +855,7 @@ async function loadErrors() {
 
 async function loadAll() {
   const now = new Date();
-  document.getElementById('last-update').textContent = 
+  document.getElementById('last-update').textContent = getRangeLabel() + ' · ' +
     'آخر تحديث: '+now.toLocaleTimeString('ar-SA');
   await Promise.all([loadOverview(), loadTemplates(), loadFunnel(), loadEvents(), loadErrors()]);
 }

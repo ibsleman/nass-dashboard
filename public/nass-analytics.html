@@ -587,12 +587,9 @@ async function loadOverview() {
       <div class="stat-sub">${fmt(photos)} صورة مرفوعة</div>
     </div>`;
 
-  // Hourly usage
-  const { data: hourData } = await sb.rpc ? 
-    await sb.from('analytics_events').select('created_at').gte('created_at', since).limit(5000) :
-    await sb.from('analytics_events').select('created_at').gte('created_at', since).limit(5000);
-  
-  const { data: hourRows } = await sb.from('analytics_events').select('created_at').gte('created_at',since).lte('created_at',rangeEnd).limit(5000);
+  // Hourly usage — fetch only created_at (safe, small data per day)
+  const { data: hourRows } = await sb.from('analytics_events')
+    .select('created_at').gte('created_at',since).lte('created_at',rangeEnd);
   
   const hourCounts = new Array(24).fill(0);
   (hourRows||[]).forEach(r => {
@@ -612,15 +609,17 @@ async function loadOverview() {
     <div class="hourly-grid">${bars}</div>
     <div class="hour-labels">${labels}</div>`;
 
-  // iOS versions
-  const { data: iosRows } = await sb.from('user_sessions').select('ios_version').gte('created_at',since).lte('created_at',rangeEnd).limit(5000);
-  const iosCounts = {};
-  (iosRows||[]).forEach(r => {
-    const v = r.ios_version || 'Unknown';
-    const major = v.split('.')[0];
-    iosCounts['iOS '+major] = (iosCounts['iOS '+major]||0)+1;
-  });
-  const iosData = Object.entries(iosCounts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([l,v])=>({label:l,value:v}));
+  // iOS versions — COUNT per major version
+  const iosVersions = ['26','18','17','16','15'];
+  const iosResults = await Promise.all(
+    iosVersions.map(v =>
+      sb.from('user_sessions').select('id',{count:'exact',head:true})
+        .like('ios_version', v+'%').gte('created_at',since).lte('created_at',rangeEnd)
+    )
+  );
+  const iosData = iosVersions
+    .map((v,i) => ({label:'iOS '+v, value: iosResults[i].count||0}))
+    .filter(d => d.value > 0);
   document.getElementById('ios-chart').innerHTML = barChart(iosData, '#4a9ef5');
 }
 
@@ -763,10 +762,18 @@ async function loadFunnel() {
 async function loadEvents() {
   const { from: since, to: rangeEnd } = getRange();
   
-  const { data: rows } = await sb.from('analytics_events').select('event_name').gte('created_at',since).lte('created_at',rangeEnd).limit(10000);
+  const eventKeys = ['app_opened','category_viewed','template_viewed','photo_uploaded','template_selected','template_saved','template_shared','error_occurred'];
+  
+  // COUNT per event type
+  const countResults = await Promise.all(
+    eventKeys.map(e =>
+      sb.from('analytics_events').select('id',{count:'exact',head:true})
+        .eq('event_name',e).gte('created_at',since).lte('created_at',rangeEnd)
+    )
+  );
   
   const counts = {};
-  (rows||[]).forEach(r => { counts[r.event_name] = (counts[r.event_name]||0)+1; });
+  eventKeys.forEach((e,i) => { counts[e] = countResults[i].count || 0; });
   const total = Object.values(counts).reduce((s,v)=>s+v,0);
   document.getElementById('events-total').textContent = fmt(total)+' حدث';
   
@@ -774,7 +781,7 @@ async function loadEvents() {
     photo_uploaded:'#f0a347',template_saved:'#3ec98e',template_shared:'#e06fa0',
     error_occurred:'#e05555',category_viewed:'#a78bfa'};
   
-  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).filter(([,c])=>c>0);
   document.getElementById('events-list').innerHTML = `<div class="event-list">${sorted.map(([e,c])=>`
     <div class="event-row">
       <div class="event-dot" style="background:${eDots[e]||'#888'}"></div>
@@ -785,30 +792,38 @@ async function loadEvents() {
       <div class="event-count">${fmt(c)}</div>
     </div>`).join('')}</div>`;
 
-  // Devices
-  const { data: devRows } = await sb.from('user_sessions').select('device_model').gte('created_at',since).lte('created_at',rangeEnd).limit(5000);
-  const devCounts = {};
-  (devRows||[]).forEach(r => {
-    const m = r.device_model||'Unknown';
-    devCounts[m] = (devCounts[m]||0)+1;
-  });
-  const devData = Object.entries(devCounts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([l,v])=>({label:l,value:v}));
+  // Devices — iPhone vs iPad using COUNT
+  const [iphoneRes, ipadRes, otherRes] = await Promise.all([
+    sb.from('user_sessions').select('id',{count:'exact',head:true}).ilike('device_model','iPhone%').gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('user_sessions').select('id',{count:'exact',head:true}).ilike('device_model','iPad%').gte('created_at',since).lte('created_at',rangeEnd),
+    sb.from('user_sessions').select('id',{count:'exact',head:true}).not('device_model','ilike','iPhone%').not('device_model','ilike','iPad%').gte('created_at',since).lte('created_at',rangeEnd),
+  ]);
+  const devData = [
+    {label:'iPhone', value: iphoneRes.count||0},
+    {label:'iPad',   value: ipadRes.count||0},
+  ].filter(d=>d.value>0);
+  if ((otherRes.count||0) > 0) devData.push({label:'أخرى', value: otherRes.count});
   document.getElementById('devices-chart').innerHTML = barChart(devData, '#4a9ef5');
 }
 
 async function loadErrors() {
   const { from: since, to: rangeEnd } = getRange();
   
+  // Total errors count
+  const { count: total } = await sb.from('analytics_events')
+    .select('id',{count:'exact',head:true})
+    .eq('event_name','error_occurred')
+    .gte('created_at',since).lte('created_at',rangeEnd);
+  
+  document.getElementById('error-badge').textContent = (total||0)+' خطأ';
+  
+  // Fetch only errors (small count usually, safe to fetch rows)
   const { data: rows } = await sb.from('analytics_events')
-    .select('metadata, created_at')
+    .select('metadata')
     .eq('event_name','error_occurred')
     .gte('created_at',since).lte('created_at',rangeEnd)
-    .limit(2000);
+    .limit(1000);
   
-  const total = rows?.length || 0;
-  document.getElementById('error-badge').textContent = total+' خطأ';
-  
-  // Categorize errors
   const byType = {};
   (rows||[]).forEach(r => {
     const meta = r.metadata||{};
@@ -818,31 +833,29 @@ async function loadErrors() {
     if (!byType[key]) byType[key] = {type, screen, count:0};
     byType[key].count++;
   });
-  
-  const loading = total === 0 ? 0 : Math.round(Object.values(byType).filter(e=>e.screen?.includes('load')||e.type?.includes('load')).reduce((s,e)=>s+e.count,0)/total*100);
-  const upload = total === 0 ? 0 : Math.round(Object.values(byType).filter(e=>e.screen?.includes('upload')||e.type?.includes('upload')).reduce((s,e)=>s+e.count,0)/total*100);
-  
+
+  const photoErrors = Object.values(byType).filter(e=>e.type?.includes('photo')||e.type?.includes('upload')||e.type?.includes('Photo')).reduce((s,e)=>s+e.count,0);
+  const saveErrors  = Object.values(byType).filter(e=>e.type?.includes('save')||e.type?.includes('Save')||e.type?.includes('export')||e.type?.includes('Export')).reduce((s,e)=>s+e.count,0);
+
   document.getElementById('error-stats').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">إجمالي الأخطاء</div>
-      <div class="stat-value" style="color:var(--red)">${fmt(total)}</div>
+      <div class="stat-value" style="color:var(--red)">${fmt(total||0)}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">أخطاء الرفع</div>
-      <div class="stat-value">${fmt(Object.values(byType).filter(e=>e.type?.includes('photo')||e.type?.includes('upload')).reduce((s,e)=>s+e.count,0))}</div>
+      <div class="stat-label">أخطاء الصور</div>
+      <div class="stat-value">${fmt(photoErrors)}</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">أخطاء الحفظ</div>
-      <div class="stat-value">${fmt(Object.values(byType).filter(e=>e.type?.includes('save')||e.type?.includes('export')).reduce((s,e)=>s+e.count,0))}</div>
+      <div class="stat-value">${fmt(saveErrors)}</div>
     </div>`;
   
   const sorted = Object.values(byType).sort((a,b)=>b.count-a.count).slice(0,10);
-  
   if (sorted.length === 0) {
     document.getElementById('error-list').innerHTML = '<div class="loading" style="color:var(--green)">✓ لا توجد أخطاء مسجلة</div>';
     return;
   }
-  
   document.getElementById('error-list').innerHTML = `<div class="error-list">${sorted.map(e=>`
     <div class="error-row">
       <div class="error-info">
@@ -855,8 +868,7 @@ async function loadErrors() {
 
 async function loadAll() {
   const now = new Date();
-  document.getElementById('last-update').textContent = getRangeLabel() + ' · ' +
-    'آخر تحديث: '+now.toLocaleTimeString('ar-SA');
+  document.getElementById('last-update').textContent = getRangeLabel() + ' · آخر تحديث: ' + now.toLocaleTimeString('ar-SA');
   await Promise.all([loadOverview(), loadTemplates(), loadFunnel(), loadEvents(), loadErrors()]);
 }
 

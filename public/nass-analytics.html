@@ -626,28 +626,55 @@ async function loadOverview() {
 async function loadTemplates() {
   const { from: since, to: rangeEnd } = getRange();
   
-  // Top templates with stats
-  const { data: rows } = await sb.from('analytics_events')
-    .select('event_name, template_id, templates!inner(image_name, category, type, is_premium)')
-    .gte('created_at', since)
-    .not('template_id', 'is', null);
+  // Step 1: جلب top template IDs بالحفظ باستخدام COUNT
+  // نجلب فقط template_id + event_name بحد أكبر بكثير
+  const { data: saveRows } = await sb.from('analytics_events')
+    .select('template_id')
+    .eq('event_name','template_saved')
+    .gte('created_at', since).lte('created_at', rangeEnd)
+    .not('template_id','is',null)
+    .limit(100000);
 
-  if (!rows || rows.length === 0) {
+  if (!saveRows || saveRows.length === 0) {
     document.getElementById('tmpl-table').innerHTML = '<div class="loading" style="color:var(--text3)">لا توجد بيانات للفترة المحددة</div>';
+    document.getElementById('cat-chart').innerHTML = '';
+    document.getElementById('premium-chart').innerHTML = '';
     return;
   }
 
+  // عدّ الحفظ لكل قالب
+  const saveCounts = {};
+  saveRows.forEach(r => { saveCounts[r.template_id] = (saveCounts[r.template_id]||0)+1; });
+  const top15ids = Object.entries(saveCounts).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([id])=>id);
+
+  // Step 2: جلب المشاهدات والمشاركات للـ top 15 فقط
+  const [viewRows, shareRows] = await Promise.all([
+    sb.from('analytics_events').select('template_id').eq('event_name','template_viewed')
+      .in('template_id', top15ids).gte('created_at',since).lte('created_at',rangeEnd).limit(100000),
+    sb.from('analytics_events').select('template_id').eq('event_name','template_shared')
+      .in('template_id', top15ids).gte('created_at',since).lte('created_at',rangeEnd).limit(100000),
+  ]);
+  const viewCounts = {}, shareCounts = {};
+  (viewRows.data||[]).forEach(r => { viewCounts[r.template_id] = (viewCounts[r.template_id]||0)+1; });
+  (shareRows.data||[]).forEach(r => { shareCounts[r.template_id] = (shareCounts[r.template_id]||0)+1; });
+
+  // Step 3: جلب تفاصيل القوالب
+  const { data: tmplDetails } = await sb.from('templates')
+    .select('id, image_name, category, type, is_premium')
+    .in('id', top15ids);
+  const tmplById = {};
+  (tmplDetails||[]).forEach(t => { tmplById[t.id] = t; });
+
+  // تجميع البيانات
   const tmplMap = {};
-  rows.forEach(r => {
-    if (!r.template_id || !r.templates) return;
-    const id = r.template_id;
-    if (!tmplMap[id]) {
-      tmplMap[id] = { ...r.templates, views:0, saves:0, shares:0 };
-    }
-    if (r.event_name === 'template_viewed') tmplMap[id].views++;
-    else if (r.event_name === 'template_saved') tmplMap[id].saves++;
-    else if (r.event_name === 'template_shared') tmplMap[id].shares++;
+  top15ids.forEach(id => {
+    const t = tmplById[id];
+    if (!t) return;
+    tmplMap[id] = { ...t, saves: saveCounts[id]||0, views: viewCounts[id]||0, shares: shareCounts[id]||0 };
   });
+
+  // للتصنيف: نحسب من كل الحفظ (مش فقط top 15)
+  const allSaveCounts = saveCounts;
 
   const sorted = Object.values(tmplMap).sort((a,b)=>b.saves-a.saves).slice(0,15);
   document.getElementById('tmpl-badge').textContent = sorted.length + ' قالب';
@@ -689,15 +716,14 @@ async function loadTemplates() {
       </tbody>
     </table>`;
 
-  // Category breakdown
+  // Category breakdown — من كل القوالب المحفوظة (top 15)
   const catCounts = {};
   Object.values(tmplMap).forEach(t => {
     const c = catNames[t.category]||t.category;
-    if (!catCounts[c]) catCounts[c] = {saves:0,views:0};
-    catCounts[c].saves += t.saves;
-    catCounts[c].views += t.views;
+    if (!catCounts[c]) catCounts[c] = 0;
+    catCounts[c] += t.saves;
   });
-  const catData = Object.entries(catCounts).sort((a,b)=>b[1].saves-a[1].saves).map(([l,v],i)=>({label:l,value:v.saves,color:colors[i%colors.length]}));
+  const catData = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).map(([l,v],i)=>({label:l,value:v,color:colors[i%colors.length]}));
   
   document.getElementById('cat-chart').innerHTML = `<div class="bar-chart">${catData.map((d,i)=>`
     <div class="bar-row">

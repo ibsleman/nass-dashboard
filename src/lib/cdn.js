@@ -1,6 +1,8 @@
 export const getCdnUrl = (url) => {
   if (!url) return url
-  const cdnDomain = import.meta.env.VITE_CDN_DOMAIN
+  // افتراضي مدمج: نسخة تطبيق المتجر تحوّل روابط supabase.co المباشرة إلى مسار CDN خاطئ
+  // فتظهر الصورة فارغة — لذا لا نحفظ رابطاً مباشراً أبداً. قيمة فارغة صريحة تعطّله (للتطوير المحلي)
+  const cdnDomain = import.meta.env.VITE_CDN_DOMAIN ?? 'https://cdn.ibsleman.com'
   if (!cdnDomain) return url
   const base = cdnDomain.replace(/\/$/, '')
   return url.replace(

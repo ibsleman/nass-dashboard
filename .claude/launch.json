@@ -4,8 +4,22 @@
     {
       "name": "nass-cms",
       "runtimeExecutable": "/usr/local/bin/node",
-      "runtimeArgs": ["node_modules/.bin/vite"],
+      "runtimeArgs": [
+        "node_modules/.bin/vite"
+      ],
       "port": 5173
+    },
+    {
+      "name": "nass-cms-local",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": [
+        "node_modules/.bin/vite",
+        "--mode",
+        "localsb",
+        "--port",
+        "5174"
+      ],
+      "port": 5174
     }
   ]
 }

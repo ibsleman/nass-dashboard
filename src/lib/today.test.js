@@ -86,7 +86,8 @@ describe('what is waiting for the admin', () => {
 
   it('lists names to place, studio drafts, thin seasons, empty occasions and failed notifications — most useful first', () => {
     const items = inboxItems({ overview, seasons, studioDrafts: 3, failedPush: 1 })
-    expect(items.map((i) => i.id)).toEqual(['names', 'season-ramadan', 'season-eidAlFitr', 'studio', 'empty', 'push'])
+    expect(items.map((i) => i.id)).toEqual(['names', 'thumbs', 'season-ramadan', 'season-eidAlFitr', 'studio', 'empty', 'push'])
+    expect(items.find((i) => i.id === 'thumbs')).toMatchObject({ title: '4 قوالب بلا صورة مصغّرة', action: { to: '/templates/occasions' } })
     expect(items[0]).toMatchObject({ title: '3 قوالب بلا مكان للاسم', action: { to: '/templates/place' } })
     expect(items.find((i) => i.id === 'season-eidAlFitr').title).toBe('عيد الفطر بعد 132 يوماً وليس فيه أي قالب')
     expect(items.find((i) => i.id === 'season-ramadan').title).toBe('رمضان بعد 103 أيام وفيه قالبان فقط')
@@ -112,7 +113,7 @@ describe('what is waiting for the admin', () => {
   })
 
   it('nothing waiting is an empty list', () => {
-    const placed = OCCASION_KEYS.map((k, i) => t(200 + i, k, { name_position_x: 0.5, name_position_y: 0.5 }))
+    const placed = OCCASION_KEYS.map((k, i) => t(200 + i, k, { name_position_x: 0.5, name_position_y: 0.5, thumbnail_url: `https://cdn/thumbnails/${i}.jpg` }))
     const items = inboxItems({ overview: placed, seasons: [], studioDrafts: 0, failedPush: 0 })
     expect(items).toEqual([])
   })

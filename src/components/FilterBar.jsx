@@ -11,6 +11,9 @@ const PREMIUM_FILTERS = [
   { value: 'premium', label: 'مدفوع'  },
 ]
 
+/** تمييز العدد بعد الرقم: 3–10 قوالب، 11–99 قالباً، وغيرها قالب */
+const templateWord = (n) => { const r = n % 100; return r >= 3 && r <= 10 ? 'قوالب' : r >= 11 && r <= 99 ? 'قالباً' : 'قالب' }
+
 export default function FilterBar({ typeFilter, premiumFilter, onTypeChange, onPremiumChange, total }) {
   return (
     <div className="flex items-center justify-between mb-4 md:mb-6 gap-3">
@@ -20,7 +23,7 @@ export default function FilterBar({ typeFilter, premiumFilter, onTypeChange, onP
         <span className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white tabular-nums leading-none">
           {total}
         </span>
-        <span className="text-xs md:text-sm font-medium text-gray-400 dark:text-gray-500">قالب</span>
+        <span className="text-xs md:text-sm font-medium text-gray-400 dark:text-gray-500">{templateWord(total)}</span>
       </div>
 
       {/* الفلاتر — قابلة للتمرير أفقياً على الهاتف */}

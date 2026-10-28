@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import FilterBar from '../../components/FilterBar'
-import TemplateCard from '../../components/TemplateCard'
+import { AnimatePresence, useReducedMotion } from 'motion/react'
+import TemplateTile from '../../components/TemplateTile'
+import HoldButton from '../../components/HoldButton'
 import TemplateModal from '../../components/TemplateModal'
 import BulkUploadModal from '../../components/BulkUploadModal'
-import DeleteConfirm from '../../components/DeleteConfirm'
 import Toast, { useToast } from '../../components/Toast'
 import { extractStoragePath } from '../../lib/cdn'
 import { OCCASIONS, OCCASION_LABEL } from '../../lib/occasions'
+import { cardThumbnail, fetchStudioTemplates } from '../../lib/studioTemplates'
 import {
   fetchTemplates,
   insertTemplate,
@@ -18,8 +20,8 @@ import {
   deleteTemplates,
 } from '../../lib/supabase'
 
-// قوالب مناسبة واحدة: الشبكة والرفع والإخفاء والحذف كما كانت (تُعاد بناؤها في المرحلة الثالثة)،
-// والمناسبات صارت شريط صور حقيقية بدل قائمة الإيموجي الجانبية.
+// قوالب مناسبة واحدة في مكتبة واحدة: المرفوعة وقوالب الاستوديو المنشورة معاً، كما يراها المستخدم في القسم.
+// الحذف بضغط مطوّل على البطاقة نفسها (لا نافذة تأكيد)، والمناسبات شريط صور حقيقية.
 
 /** صورة تمثّل المناسبة: أحدث قالب فيها */
 function coverOf(rows) {
@@ -81,12 +83,11 @@ export default function Library({ overview, onChanged }) {
   const [modalOpen, setModalOpen] = useState(false)
   const [bulkModalOpen, setBulkModalOpen] = useState(false)
   const [editTemplate, setEditTemplate] = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
-  const [deleting, setDeleting] = useState(false)
+  const [studio, setStudio] = useState([])
+  const reduce = useReducedMotion()
 
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
-  const [bulkDeletePending, setBulkDeletePending] = useState(false)
 
   const loadTemplates = useCallback(async (category) => {
     setLoading(true)
@@ -98,6 +99,17 @@ export default function Library({ overview, onChanged }) {
       setLoading(false)
     }
   }, [showToast])
+
+  // قوالب الاستوديو المنشورة في المناسبة نفسها — تظهر في الشبكة لأن المستخدم يراها هناك
+  useEffect(() => {
+    let alive = true
+    fetchStudioTemplates().then(
+      (rows) => alive && setStudio(rows.filter((t) => t.status === 'published' && t.category_id === activeCategory)
+        .map((t) => ({ id: t.id, is_premium: t.is_premium, thumbnail_url: cardThumbnail(t), type: 'studio', name_ar: t.name_ar }))),
+      () => alive && setStudio([]),
+    )
+    return () => { alive = false }
+  }, [activeCategory])
 
   useEffect(() => {
     loadTemplates(activeCategory)
@@ -128,23 +140,19 @@ export default function Library({ overview, onChanged }) {
     onChanged?.()
   }
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteTarget) return
-    setDeleting(true)
+  /** حذف ملفات القالب (الصورة، الفيديو، المصغّرة) ثم صفّه — يُستدعى بعد اكتمال الضغط المطوّل */
+  const filesOf = (t) => [...new Set([t.image_url, t.video_url, t.thumbnail_url].map(extractStoragePath).filter(Boolean))]
+
+  const deleteOne = async (t) => {
     try {
-      await Promise.all([
-        extractStoragePath(deleteTarget.image_url) ? deleteFile(extractStoragePath(deleteTarget.image_url)) : Promise.resolve(),
-        extractStoragePath(deleteTarget.video_url) ? deleteFile(extractStoragePath(deleteTarget.video_url)) : Promise.resolve(),
-      ])
-      await deleteTemplate(deleteTarget.id)
-      setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id))
-      showToast('تم حذف القالب')
+      await Promise.allSettled(filesOf(t).map(deleteFile))
+      await deleteTemplate(t.id)
+      setTemplates((prev) => prev.filter((x) => x.id !== t.id))
+      setSelectedIds((prev) => { const n = new Set(prev); n.delete(t.id); return n })
+      showToast('حُذف القالب')
       onChanged?.()
     } catch (err) {
-      showToast('خطأ في الحذف: ' + err.message, 'error')
-    } finally {
-      setDeleting(false)
-      setDeleteTarget(null)
+      showToast('تعذّر الحذف: ' + err.message, 'error')
     }
   }
 
@@ -195,12 +203,7 @@ export default function Library({ overview, onChanged }) {
     setBulkLoading(true)
     try {
       const selectedTemplates = templates.filter((t) => ids.includes(t.id))
-      await Promise.allSettled(
-        selectedTemplates.flatMap((t) => [
-          extractStoragePath(t.image_url) ? deleteFile(extractStoragePath(t.image_url)) : null,
-          extractStoragePath(t.video_url) ? deleteFile(extractStoragePath(t.video_url)) : null,
-        ].filter(Boolean)),
-      )
+      await Promise.allSettled(selectedTemplates.flatMap(filesOf).map(deleteFile))
       await deleteTemplates(ids)
       setTemplates((prev) => prev.filter((t) => !ids.includes(t.id)))
       setSelectedIds(new Set())
@@ -210,10 +213,11 @@ export default function Library({ overview, onChanged }) {
       showToast('خطأ في الحذف: ' + err.message, 'error')
     } finally {
       setBulkLoading(false)
-      setBulkDeletePending(false)
     }
   }
 
+  // الاستوديو بلا «نوع» صورة/فيديو: يظهر في «الكل» فقط، ويتبع تصفية مجاني/مدفوع
+  const shownStudio = typeFilter === 'all' ? studio.filter((t) => premiumFilter === 'all' || (premiumFilter === 'premium') === t.is_premium) : []
   const label = OCCASION_LABEL[activeCategory]
   const allSelected = selectedIds.size === filtered.length && filtered.length > 0
 
@@ -266,7 +270,7 @@ export default function Library({ overview, onChanged }) {
               <span className="num rounded-full bg-gold/15 px-2.5 py-1 text-[11px] font-bold text-gold">{selectedIds.size} محدد</span>
               <button type="button" onClick={() => handleBulkSetVisibility(false)} disabled={bulkLoading} className="min-h-9 rounded-xl border border-hair bg-surface px-3 text-[12px] font-bold disabled:opacity-50">إخفاء المحدد</button>
               <button type="button" onClick={() => handleBulkSetVisibility(true)} disabled={bulkLoading} className="min-h-9 rounded-xl border border-hair bg-surface px-3 text-[12px] font-bold disabled:opacity-50">إظهار المحدد</button>
-              <button type="button" onClick={() => setBulkDeletePending(true)} disabled={bulkLoading} className="min-h-9 rounded-xl bg-warn px-3 text-[12px] font-bold text-white disabled:opacity-50">حذف المحدد</button>
+              <HoldButton compact label={`حذف ${selectedIds.size}`} onConfirm={executeBulkDelete} disabled={bulkLoading} />
               <button type="button" onClick={() => setSelectedIds(new Set())} className="min-h-9 px-2 text-[12px] text-ink-2 hover:text-ink">إلغاء التحديد</button>
             </div>
           )}
@@ -279,7 +283,7 @@ export default function Library({ overview, onChanged }) {
             <div key={i} className="aspect-[9/16] animate-pulse rounded-card bg-hair" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && shownStudio.length === 0 ? (
         <div className="grid justify-items-center gap-3 rounded-card border border-dashed border-hair px-4 py-16 text-center">
           <h3 className="text-[17px] font-bold">لا قوالب هنا</h3>
           <p className="max-w-xs text-[13px] text-ink-2">
@@ -298,37 +302,28 @@ export default function Library({ overview, onChanged }) {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-          {filtered.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              onEdit={(t) => { setEditTemplate(t); setModalOpen(true) }}
-              onDelete={(t) => setDeleteTarget(t)}
-              isSelected={selectedIds.has(template.id)}
-              onToggleSelect={handleToggleSelect}
-              onToggleVisibility={handleToggleVisibility}
-            />
-          ))}
-        </div>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          <AnimatePresence initial={false}>
+            {filtered.map((t) => (
+              <TemplateTile
+                key={t.id}
+                template={t}
+                reduce={reduce}
+                selected={selectedIds.has(t.id)}
+                selecting={selectedIds.size > 0}
+                onToggleSelect={handleToggleSelect}
+                onEdit={(x) => { setEditTemplate(x); setModalOpen(true) }}
+                onToggleVisibility={handleToggleVisibility}
+                onDelete={deleteOne}
+              />
+            ))}
+            {shownStudio.map((t) => <TemplateTile key={t.id} template={t} studio reduce={reduce} />)}
+          </AnimatePresence>
+        </ul>
       )}
 
       <BulkUploadModal isOpen={bulkModalOpen} onClose={() => setBulkModalOpen(false)} onSave={handleSave} category={activeCategory} />
       <TemplateModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onSave={handleSave} editTemplate={editTemplate} category={activeCategory} />
-      <DeleteConfirm
-        isOpen={!!deleteTarget}
-        templateName={deleteTarget?.image_name || deleteTarget?.video_name || 'هذا القالب'}
-        onConfirm={handleDeleteConfirm}
-        onCancel={() => setDeleteTarget(null)}
-        loading={deleting}
-      />
-      <DeleteConfirm
-        isOpen={bulkDeletePending}
-        templateName={`${selectedIds.size} قالب`}
-        onConfirm={executeBulkDelete}
-        onCancel={() => setBulkDeletePending(false)}
-        loading={bulkLoading}
-      />
       <Toast toast={toast} />
     </div>
   )

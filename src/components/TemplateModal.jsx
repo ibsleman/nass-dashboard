@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { uploadFile } from '../lib/supabase'
+import { autoThumbnail } from '../lib/thumbnail'
 
 const EMPTY_FORM = {
   type:             'image',
@@ -202,6 +203,10 @@ export default function TemplateModal({ isOpen, onClose, onSave, editTemplate, c
       if (thumbnailFile) {
         const { publicUrl } = await uploadFile(thumbnailFile, 'thumbnails')
         payload.thumbnail_url = publicUrl
+      } else if (imageFile || videoFile) {
+        // ملف جديد ⇒ مصغّرة جديدة منه (الشبكات في اللوحة والتطبيق تقرؤها بدل الأصل الثقيل)
+        payload.thumbnail_url = await autoThumbnail({ imageFile, videoFile, appearTime: payload.text_appear_time })
+          ?? (imageFile ? null : editTemplate?.thumbnail_url ?? null)
       } else {
         payload.thumbnail_url = editTemplate?.thumbnail_url ?? null
       }

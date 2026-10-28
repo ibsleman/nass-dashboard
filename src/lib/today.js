@@ -2,6 +2,7 @@
 // دوال خالصة — الجلب في supabase.js والعرض في TodayPage.
 import { OCCASIONS, OCCASION_LABEL } from './occasions'
 import { hasSpot } from './nameSpot'
+import { needsThumbnail } from './thumbnail'
 
 /** المواسم التي يُستعد لها: الشهر والتاريخ الهجري لأول يوم */
 export const SEASONS = [
@@ -42,6 +43,7 @@ const PLURALS = {
   day: { one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يوماً', other: 'يوم', zero: 'لا أيام' },
   template: { one: 'قالب واحد', two: 'قالبان', few: 'قوالب', many: 'قالباً', other: 'قالب', zero: 'لا قوالب' },
   occasion: { one: 'مناسبة واحدة', two: 'مناسبتان', few: 'مناسبات', many: 'مناسبة', other: 'مناسبة', zero: 'لا مناسبات' },
+  thumbnail: { one: 'مصغّرة واحدة', two: 'مصغّرتان', few: 'مصغّرات', many: 'مصغّرة', other: 'مصغّرة', zero: 'لا مصغّرات' },
 }
 
 /** العدد العربي بأرقام لاتينية (قرار التطبيق): 1، 2، 3–10، 11–99، 100+ بحسب آخر خانتين */
@@ -110,6 +112,18 @@ export function inboxItems({ overview, seasons, studioDrafts = 0, failedPush = 0
       detail: 'التطبيق يخمّن المكان الآن. ضعه بنفسك وتأخذه الأجوال في المزامنة التالية.',
       action: { label: 'ابدأ', to: '/templates/place' },
       covers: unplaced.map(coverOf).filter(Boolean).slice(0, 3),
+    })
+  }
+
+  const heavy = overview.filter(needsThumbnail)
+  if (heavy.length) {
+    items.push({
+      id: 'thumbs',
+      title: `${countAr(heavy.length, 'template')} بلا صورة مصغّرة`,
+      detail: 'اللوحة وشبكات التطبيق تحمّل الصورة الكاملة لكل بطاقة. اصنع المصغّرات مرة واحدة.',
+      action: { label: 'اصنعها', to: '/templates/occasions' },
+      covers: [],
+      badge: String(heavy.length),
     })
   }
 

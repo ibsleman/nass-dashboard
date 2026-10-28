@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { uploadFile } from '../lib/supabase'
+import { autoThumbnail } from '../lib/thumbnail'
 
 const DEFAULT_ITEM = () => ({
   type: 'image',
@@ -85,6 +86,10 @@ export default function BulkUploadModal({ isOpen, onClose, onSave, category }) {
           payload.video_url  = null
           payload.video_name = null
         }
+
+        payload.thumbnail_url = await autoThumbnail(
+          item.type === 'video' ? { videoFile: item.file, appearTime: payload.text_appear_time } : { imageFile: item.file },
+        )
 
         await onSave(payload, null)
         setProgress({ done: i + 1, total: items.length })

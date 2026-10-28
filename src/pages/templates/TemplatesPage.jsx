@@ -3,6 +3,7 @@ import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import { fetchTemplatesOverview } from '../../lib/supabase'
 import { hasSpot } from '../../lib/nameSpot'
 import Library from './Library'
+import ThumbnailsBackfill from '../../components/ThumbnailsBackfill'
 import PlacePage from './PlacePage'
 import StudioTemplatesPage from '../StudioTemplatesPage'
 
@@ -49,6 +50,8 @@ export default function TemplatesPage() {
       </header>
 
       {error && <p className="rounded-card bg-warn/10 px-4 py-3 text-[13px] text-warn">تعذّر تحميل القوالب: {error}</p>}
+
+      <ThumbnailsBackfill overview={overview} onChanged={reload} />
 
       <Routes>
         <Route index element={<Navigate to="occasions" replace />} />

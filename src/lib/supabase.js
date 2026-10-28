@@ -391,3 +391,26 @@ export async function uploadAdMedia(file) {
 export function fetchSubscribers() {
   return rpc('admin_stats_subscribers')
 }
+
+// ─── ترتيب المناسبات في رئيسية التطبيق ───────────────────────────────────────
+
+export async function fetchCategories() {
+  const { data, error } = await supabase.from('categories').select('id, key, name_ar, display_order, is_active').order('display_order')
+  if (error) throw error
+  return data
+}
+
+/** يحفظ أرقام الترتيب الجديدة — صف لكل مناسبة تغيّر رقمها */
+export async function saveCategoryOrder(patch) {
+  const results = await Promise.all(patch.map(({ id, display_order }) =>
+    supabase.from('categories').update({ display_order }).eq('id', id)))
+  const failed = results.find((r) => r.error)
+  if (failed) throw failed.error
+}
+
+/** «مخفي» في القاعدة لا يخفي شيئاً في التطبيق (يضعه في الآخر) — يُعاد ظاهراً بصدق */
+export async function showCategory(id) {
+  const { error } = await supabase.from('categories').update({ is_active: true }).eq('id', id)
+  if (error) throw error
+}
+

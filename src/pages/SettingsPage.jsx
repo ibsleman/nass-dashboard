@@ -1,7 +1,6 @@
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
-import LegacyRoom from '../components/LegacyRoom'
-import CategoriesPage from './CategoriesPage'
+import CategoryOrder from './settings/CategoryOrder'
 
 const MODES = [
   { key: 'auto', label: 'حسب الجهاز' },
@@ -36,9 +35,7 @@ export default function SettingsPage() {
 
       <section className="grid gap-3">
         <h2 className="text-[17px] font-bold">ترتيب المناسبات في التطبيق</h2>
-        <div className="overflow-hidden rounded-card">
-          <LegacyRoom><CategoriesPage /></LegacyRoom>
-        </div>
+        <CategoryOrder />
       </section>
 
       <section>

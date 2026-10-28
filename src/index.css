@@ -2,8 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  font-family: 'Cairo', sans-serif;
+/*
+ * رموز «المعرض» — هوية التطبيق نفسها (DesignTokens.swift في مستودع Nass، وdocs/design/dashboard-G1.html).
+ * عاجي دافئ نهاراً، فحم سينمائي ليلاً، وذهبي واحد بدرجتين للأفعال والاختيار. الأحمر للحذف وحده.
+ * القنوات بلا rgb() كي يعمل التدرج الشفاف في Tailwind (bg-gold/10).
+ */
+:root {
+  --c-page: 236 230 219;
+  --c-bg: 245 241 234;
+  --c-surface: 255 255 255;
+  --c-sunken: 239 233 223;
+  --c-ink: 24 20 15;
+  --c-ink2: 119 110 98;
+  --c-ink3: 163 154 141;
+  --c-gold: 138 100 22;
+  --c-on-gold: 255 249 236;
+  --c-warn: 163 54 28;
+  --c-ok: 63 122 78;
+  --c-hair: 24 20 15;
+  --hair-alpha: 0.09;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Arabic", "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-logo: "Aref Ruqaa", "SF Arabic", "IBM Plex Sans Arabic", serif;
+  /* اسم المستخدم على القالب: خط التطبيق نفسه */
+  --font-name: "Tajawal", "SF Arabic", sans-serif;
+
+  --shadow-card: 0 1px 0 rgb(24 20 15 / 0.04), 0 18px 40px -24px rgb(24 20 15 / 0.45);
+  color-scheme: light;
+}
+
+.dark {
+  --c-page: 8 8 7;
+  --c-bg: 14 13 11;
+  --c-surface: 26 24 21;
+  --c-sunken: 21 19 16;
+  --c-ink: 243 238 228;
+  --c-ink2: 156 149 138;
+  --c-ink3: 110 104 95;
+  --c-gold: 233 196 106;
+  --c-on-gold: 14 13 11;
+  --c-warn: 229 138 108;
+  --c-ok: 140 199 154;
+  --c-hair: 255 255 255;
+  --hair-alpha: 0.10;
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03), 0 24px 48px -24px rgb(0 0 0 / 0.85);
+  color-scheme: dark;
 }
 
 html, body {
@@ -12,11 +55,40 @@ html, body {
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-bg text-ink;
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea {
+    font-family: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-gold));
+    outline-offset: 2px;
   }
 }
 
 @layer utilities {
+  .border-hair {
+    border-color: rgb(var(--c-hair) / var(--hair-alpha));
+  }
+  .bg-hair {
+    background-color: rgb(var(--c-hair) / var(--hair-alpha));
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .font-logo {
+    font-family: var(--font-logo);
+    font-weight: 700;
+  }
+  .font-name {
+    font-family: var(--font-name);
+    font-weight: 700;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
   .scrollbar-thin {
     scrollbar-width: thin;
   }

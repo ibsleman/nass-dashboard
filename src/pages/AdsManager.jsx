@@ -74,7 +74,7 @@ function Badge({ children, color = "gray" }) {
   const colors = {
     green: { bg: "rgba(22,163,74,0.18)",   text: "#4ade80" },
     red:   { bg: "rgba(239,68,68,0.18)",   text: "#f87171" },
-    gray:  { bg: "rgba(255,255,255,0.08)", text: "#9ca3af" },
+    gray:  { bg: "rgba(255,255,255,0.08)", text: "#9C958A" },
     blue:  { bg: "rgba(59,130,246,0.18)",  text: "#60a5fa" },
   };
   const c = colors[color] || colors.gray;
@@ -314,8 +314,8 @@ export default function AdsManager() {
 
   // ── inline styles for main view ───────────────────────────────
   const card = {
-    background: "#0f0f1a",
-    border: "1px solid rgba(124,58,237,0.25)",
+    background: "#0E0D0B",
+    border: "1px solid rgba(233,196,106,0.25)",
     borderRadius: 16,
     padding: "20px 24px",
     marginBottom: 16,
@@ -329,8 +329,8 @@ export default function AdsManager() {
     gap: 12,
   };
 
-  const labelStyle  = { fontSize: 14, color: "#e5e7eb", fontWeight: 500 };
-  const sublabel    = { fontSize: 12, color: "#6b6b8a", marginTop: 2 };
+  const labelStyle  = { fontSize: 14, color: "#F3EEE4", fontWeight: 500 };
+  const sublabel    = { fontSize: 12, color: "#9C958A", marginTop: 2 };
 
   const btnStyle = (variant = "primary") => ({
     padding: "8px 18px",
@@ -339,15 +339,15 @@ export default function AdsManager() {
     cursor: "pointer",
     fontWeight: 600,
     fontSize: 14,
-    background: variant === "primary" ? "linear-gradient(135deg,#7c3aed,#6d28d9)"
+    background: variant === "primary" ? "linear-gradient(135deg,#8A6416,#775612)"
               : variant === "danger"  ? "#ef4444"
               : "transparent",
-    color: variant === "ghost" ? "#a0a0b0" : "#fff",
-    boxShadow: variant === "primary" ? "0 4px 14px rgba(124,58,237,0.35)" : "none",
+    color: variant === "ghost" ? "#9C958A" : "#fff",
+    boxShadow: variant === "primary" ? "0 4px 14px rgba(233,196,106,0.35)" : "none",
   });
 
   if (loading) return (
-    <div style={{ textAlign: "center", padding: 80, color: "#9ca3af" }}>
+    <div style={{ textAlign: "center", padding: 80, color: "#9C958A" }}>
       جارٍ التحميل…
     </div>
   );
@@ -368,14 +368,14 @@ export default function AdsManager() {
     <div style={{ maxWidth: 840, margin: "0 auto", padding: "24px 16px", direction: "rtl" }}>
       <style>{`
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-        .ad-row:hover{background:rgba(124,58,237,0.06)!important}
+        .ad-row:hover{background:rgba(233,196,106,0.06)!important}
       `}</style>
 
       {/* ── Page Header ── */}
       <div style={{ ...row, marginBottom: 24 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#fff" }}>إدارة الإعلانات</h1>
-          <div style={{ fontSize: 13, color: "#6b6b8a", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "#9C958A", marginTop: 4 }}>
             تحكم في إعلانات جوجل والإعلانات المخصصة
           </div>
         </div>
@@ -430,7 +430,7 @@ export default function AdsManager() {
       <div style={{ ...card, ...row }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>الإعلانات المخصصة</div>
-          <div style={{ fontSize: 13, color: "#6b6b8a", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "#9C958A", marginTop: 4 }}>
             تفعيل هذا الخيار يعرض إعلاناتك بدلاً من إعلانات جوجل
           </div>
         </div>
@@ -473,12 +473,12 @@ export default function AdsManager() {
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#fff" }}>
           قائمة الإعلانات المخصصة
         </div>
-        <div style={{ fontSize: 13, color: "#6b6b8a", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#9C958A", marginBottom: 16 }}>
           {ads.length} إعلان
         </div>
 
         {ads.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#3d3d5c" }}>
+          <div style={{ textAlign: "center", padding: "40px 0", color: "#3A352E" }}>
             لا توجد إعلانات مخصصة بعد — أضف إعلاناً جديداً
           </div>
         ) : ads.map(ad => {
@@ -502,7 +502,7 @@ export default function AdsManager() {
             >
               {/* Info */}
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "#e5e7eb" }}>
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4, color: "#F3EEE4" }}>
                   {ad.title}
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
@@ -512,7 +512,7 @@ export default function AdsManager() {
                   {ad.show_on_save   && <Badge>حفظ</Badge>}
                   {ad.show_on_share  && <Badge>مشاركة</Badge>}
                   {ad.start_date && (
-                    <span style={{ fontSize: 11, color: "#6b6b8a" }}>
+                    <span style={{ fontSize: 11, color: "#9C958A" }}>
                       {ad.start_date} → {ad.end_date || "∞"}
                     </span>
                   )}

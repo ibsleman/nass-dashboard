@@ -1,8 +1,8 @@
 import { supabase } from './supabase'
-import { CATEGORIES } from '../components/Sidebar'
+import { OCCASIONS } from './occasions'
 
 /** مناسبات الرئيسية الـ11 — القسم الصالح للنشر */
-export const HOME_CATEGORIES = CATEGORIES.filter((c) => !c.key.startsWith('__'))
+export const HOME_CATEGORIES = OCCASIONS
 const HOME_KEYS = new Set(HOME_CATEGORIES.map((c) => c.key))
 
 export const STATUS_LABELS = { draft: 'مسودات', published: 'منشور', archived: 'مؤرشف' }

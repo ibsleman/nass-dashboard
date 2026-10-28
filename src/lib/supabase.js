@@ -47,6 +47,17 @@ export async function fetchTemplates(category) {
   return data
 }
 
+/** كل القوالب بالحقول الخفيفة — للعدّادات وصور المناسبات ودفعة «ضع الاسم» في طلب واحد */
+export async function fetchTemplatesOverview() {
+  const { data, error } = await supabase
+    .from('templates')
+    .select('id, category, type, is_premium, is_visible, image_url, thumbnail_url, video_url, text_appear_time, name_position_x, name_position_y, created_at')
+    .order('created_at', { ascending: false })
+    .range(0, 4999)
+  if (error) throw error
+  return data
+}
+
 export async function fetchTemplateCount(category) {
   const { count, error } = await supabase
     .from('templates')
@@ -81,9 +92,10 @@ export async function deleteTemplate(id) {
 // ─── Bulk operations ─────────────────────────────────────────────────────────
 
 export async function updateTemplatesVisibility(ids, isVisible) {
+  // updated_at: الأجوال تزامن بالفرق عليه — بدونه لا يصلها الإخفاء
   const { error } = await supabase
     .from('templates')
-    .update({ is_visible: isVisible })
+    .update({ is_visible: isVisible, updated_at: new Date().toISOString() })
     .in('id', ids)
   if (error) throw error
 }

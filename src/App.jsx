@@ -2,7 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import Shell from './components/Shell'
+import LegacyRoom from './components/LegacyRoom'
+import TemplatesPage from './pages/templates/TemplatesPage'
+import ReachPage from './pages/ReachPage'
+import SettingsPage from './pages/SettingsPage'
+import AdsManager from './pages/AdsManager'
+import AnalyticsPage from './pages/AnalyticsPage'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -20,22 +26,17 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/*"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/" element={<PrivateRoute><Shell /></PrivateRoute>}>
+              {/* «اليوم» في المرحلة الثانية؛ حتى ذلك تفتح اللوحة على القوالب */}
+              <Route index element={<Navigate to="/templates" replace />} />
+              <Route path="templates/*" element={<TemplatesPage />} />
+              <Route path="numbers" element={<LegacyRoom><AnalyticsPage /></LegacyRoom>} />
+              <Route path="reach/*" element={<ReachPage />} />
+              <Route path="income" element={<LegacyRoom><AdsManager /></LegacyRoom>} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/templates" replace />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </AuthProvider>

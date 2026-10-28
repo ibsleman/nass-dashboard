@@ -82,7 +82,7 @@ export default function CategoriesPage() {
           onClick={saveChanges}
           disabled={saving}
           style={{
-            background: saving ? "#ccc" : "#4F46E5",
+            background: saving ? "#ccc" : "#8A6416",
             color: "#fff",
             border: "none",
             borderRadius: "8px",
@@ -110,8 +110,8 @@ export default function CategoriesPage() {
               display: "flex",
               alignItems: "center",
               gap: "12px",
-              background: cat.is_active ? "#1e2130" : "#161822",
-              border: "1px solid #2e3148",
+              background: cat.is_active ? "#1A1815" : "#151310",
+              border: "1px solid #26231E",
               borderRadius: "10px",
               padding: "12px 16px",
               opacity: cat.is_active ? 1 : 0.5,
@@ -121,7 +121,7 @@ export default function CategoriesPage() {
               {index + 1}
             </span>
 
-            <span style={{ flex: 1, fontWeight: "600", fontSize: "15px", color: "#e2e8f0" }}>
+            <span style={{ flex: 1, fontWeight: "600", fontSize: "15px", color: "#F3EEE4" }}>
               {CATEGORY_LABELS[cat.key] || cat.name_ar}
             </span>
 
@@ -146,12 +146,12 @@ export default function CategoriesPage() {
                 onClick={() => moveUp(index)}
                 disabled={index === 0}
                 style={{
-                  background: "#2e3148",
-                  border: "1px solid #3d4166",
+                  background: "#26231E",
+                  border: "1px solid #3A352E",
                   borderRadius: "4px",
                   width: "28px",
                   height: "28px",
-                  color: "#9ca3af",
+                  color: "#9C958A",
                   cursor: index === 0 ? "not-allowed" : "pointer",
                   opacity: index === 0 ? 0.3 : 1,
                   fontSize: "12px",
@@ -163,12 +163,12 @@ export default function CategoriesPage() {
                 onClick={() => moveDown(index)}
                 disabled={index === categories.length - 1}
                 style={{
-                  background: "#2e3148",
-                  border: "1px solid #3d4166",
+                  background: "#26231E",
+                  border: "1px solid #3A352E",
                   borderRadius: "4px",
                   width: "28px",
                   height: "28px",
-                  color: "#9ca3af",
+                  color: "#9C958A",
                   cursor: index === categories.length - 1 ? "not-allowed" : "pointer",
                   opacity: index === categories.length - 1 ? 0.3 : 1,
                   fontSize: "12px",

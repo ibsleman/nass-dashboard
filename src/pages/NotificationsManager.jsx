@@ -25,7 +25,7 @@ const STATUS_CONFIG = {
   sending:   { label: "جاري الإرسال", bg: "rgba(59,130,246,0.18)", text: "#60a5fa" },
   sent:      { label: "تم الإرسال",   bg: "rgba(22,163,74,0.18)",  text: "#4ade80" },
   failed:    { label: "فشل",          bg: "rgba(239,68,68,0.18)",  text: "#f87171" },
-  scheduled: { label: "مجدول",        bg: "rgba(139,92,246,0.18)", text: "#a78bfa" },
+  scheduled: { label: "مجدول",        bg: "rgba(139,92,246,0.18)", text: "#E9C46A" },
 };
 
 const EMPTY_FORM = {
@@ -84,12 +84,12 @@ function Toast({ msg, type }) {
 }
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({ label, value, color = "#a78bfa" }) {
+function StatCard({ label, value, color = "#E9C46A" }) {
   return (
     <div
       style={{
-        background: "#0f0f1a",
-        border: "1px solid rgba(124,58,237,0.2)",
+        background: "#0E0D0B",
+        border: "1px solid rgba(233,196,106,0.2)",
         borderRadius: 14,
         padding: "16px 20px",
         flex: 1,
@@ -97,7 +97,7 @@ function StatCard({ label, value, color = "#a78bfa" }) {
         boxShadow: "0 2px 12px rgba(0,0,0,0.35)",
       }}
     >
-      <p style={{ fontSize: 12, color: "#6b6b8a", marginBottom: 6, fontWeight: 500 }}>{label}</p>
+      <p style={{ fontSize: 12, color: "#9C958A", marginBottom: 6, fontWeight: 500 }}>{label}</p>
       <p style={{ fontSize: 26, fontWeight: 700, color, lineHeight: 1 }}>
         {value ?? "—"}
       </p>
@@ -254,8 +254,8 @@ export default function NotificationsManager() {
 
   // ── styles ────────────────────────────────────────────────────────────────
   const card = {
-    background: "#0f0f1a",
-    border: "1px solid rgba(124,58,237,0.25)",
+    background: "#0E0D0B",
+    border: "1px solid rgba(233,196,106,0.25)",
     borderRadius: 16,
     padding: "20px 24px",
     marginBottom: 20,
@@ -268,14 +268,14 @@ export default function NotificationsManager() {
     border: "1px solid rgba(255,255,255,0.12)",
     borderRadius: 10,
     padding: "10px 14px",
-    color: "#e5e7eb",
+    color: "#F3EEE4",
     fontSize: 14,
     outline: "none",
     boxSizing: "border-box",
     direction: "rtl",
   };
 
-  const labelStyle = { fontSize: 13, color: "#9ca3af", fontWeight: 500, marginBottom: 6, display: "block" };
+  const labelStyle = { fontSize: 13, color: "#9C958A", fontWeight: 500, marginBottom: 6, display: "block" };
 
   const radioGroup = {
     display: "flex",
@@ -291,9 +291,9 @@ export default function NotificationsManager() {
     cursor: submitting ? "not-allowed" : "pointer",
     fontWeight: 700,
     fontSize: 15,
-    background: submitting ? "#4b5563" : "linear-gradient(135deg,#7c3aed,#6d28d9)",
+    background: submitting ? "#4b5563" : "linear-gradient(135deg,#8A6416,#775612)",
     color: "#fff",
-    boxShadow: submitting ? "none" : "0 4px 14px rgba(124,58,237,0.35)",
+    boxShadow: submitting ? "none" : "0 4px 14px rgba(233,196,106,0.35)",
     transition: "all 0.2s",
     marginTop: 8,
     opacity: submitting ? 0.7 : 1,
@@ -303,7 +303,7 @@ export default function NotificationsManager() {
     padding: "10px 14px",
     fontSize: 12,
     fontWeight: 600,
-    color: "#6b6b8a",
+    color: "#9C958A",
     textAlign: "right",
     borderBottom: "1px solid rgba(255,255,255,0.07)",
     whiteSpace: "nowrap",
@@ -325,31 +325,31 @@ export default function NotificationsManager() {
       <style>{`
         input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
         input::placeholder, textarea::placeholder { color: #4b5563; }
-        select option { background: #1a1a2e; color: #e5e7eb; }
-        .notif-row:hover td { background: rgba(124,58,237,0.04); }
-        input[type="radio"] { accent-color: #7c3aed; }
+        select option { background: #1A1815; color: #F3EEE4; }
+        .notif-row:hover td { background: rgba(233,196,106,0.04); }
+        input[type="radio"] { accent-color: #8A6416; }
       `}</style>
 
       {/* ── Page title ── */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#e5e7eb", margin: 0 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#F3EEE4", margin: 0 }}>
           🔔 إدارة الإشعارات
         </h1>
-        <p style={{ fontSize: 13, color: "#6b6b8a", marginTop: 4 }}>
+        <p style={{ fontSize: 13, color: "#9C958A", marginTop: 4 }}>
           أرسل أو جدول إشعارات Push للمستخدمين
         </p>
       </div>
 
       {/* ── Stats row ── */}
       <div style={{ display: "flex", gap: 14, marginBottom: 24, flexWrap: "wrap" }}>
-        <StatCard label="إجمالي الأجهزة المسجلة" value={stats.total} color="#a78bfa" />
+        <StatCard label="إجمالي الأجهزة المسجلة" value={stats.total} color="#E9C46A" />
         <StatCard label="الأجهزة النشطة"           value={stats.active} color="#4ade80" />
         <StatCard label="إشعارات هذا الشهر"        value={stats.sentThisMonth} color="#60a5fa" />
       </div>
 
       {/* ── Send / Schedule Form ── */}
       <div style={card}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#e5e7eb", marginBottom: 20, marginTop: 0 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#F3EEE4", marginBottom: 20, marginTop: 0 }}>
           إرسال / جدولة إشعار
         </h2>
 
@@ -373,7 +373,7 @@ export default function NotificationsManager() {
             <div>
               <label style={labelStyle}>الاستهداف</label>
               <div style={radioGroup}>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#e5e7eb", fontSize: 14 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#F3EEE4", fontSize: 14 }}>
                   <input
                     type="radio"
                     name="target"
@@ -383,7 +383,7 @@ export default function NotificationsManager() {
                   />
                   الكل
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#e5e7eb", fontSize: 14 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#F3EEE4", fontSize: 14 }}>
                   <input
                     type="radio"
                     name="target"
@@ -427,7 +427,7 @@ export default function NotificationsManager() {
           <div style={{ marginBottom: 16 }}>
             <label style={labelStyle}>وقت الإرسال</label>
             <div style={radioGroup}>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#e5e7eb", fontSize: 14 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#F3EEE4", fontSize: 14 }}>
                 <input
                   type="radio"
                   name="schedule"
@@ -436,7 +436,7 @@ export default function NotificationsManager() {
                 />
                 إرسال فوري
               </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#e5e7eb", fontSize: 14 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", color: "#F3EEE4", fontSize: 14 }}>
                 <input
                   type="radio"
                   name="schedule"
@@ -475,16 +475,16 @@ export default function NotificationsManager() {
       {/* ── Notifications History Table ── */}
       <div style={card}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#e5e7eb", margin: 0 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#F3EEE4", margin: 0 }}>
             سجل الإشعارات
           </h2>
           <button
             onClick={fetchNotifications}
             style={{
-              background: "rgba(124,58,237,0.15)",
-              border: "1px solid rgba(124,58,237,0.3)",
+              background: "rgba(233,196,106,0.15)",
+              border: "1px solid rgba(233,196,106,0.3)",
               borderRadius: 8,
-              color: "#a78bfa",
+              color: "#E9C46A",
               fontSize: 12,
               fontWeight: 600,
               padding: "6px 12px",
@@ -503,17 +503,17 @@ export default function NotificationsManager() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "#6b6b8a" }}>
+          <div style={{ textAlign: "center", padding: "40px 0", color: "#9C958A" }}>
             <svg style={{ width: 32, height: 32, margin: "0 auto 12px", animation: "spin 1s linear infinite" }} fill="none" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke="rgba(124,58,237,0.3)" strokeWidth="3" />
-              <path d="M12 2a10 10 0 0110 10" stroke="#7c3aed" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="12" cy="12" r="10" stroke="rgba(233,196,106,0.3)" strokeWidth="3" />
+              <path d="M12 2a10 10 0 0110 10" stroke="#8A6416" strokeWidth="3" strokeLinecap="round" />
             </svg>
             <p style={{ fontSize: 14 }}>جاري التحميل...</p>
           </div>
         ) : notifications.length === 0 ? (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
             <p style={{ fontSize: 36, marginBottom: 10 }}>🔕</p>
-            <p style={{ color: "#6b6b8a", fontSize: 14 }}>لا توجد إشعارات بعد</p>
+            <p style={{ color: "#9C958A", fontSize: 14 }}>لا توجد إشعارات بعد</p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -540,14 +540,14 @@ export default function NotificationsManager() {
                   return (
                     <tr key={n.id} className="notif-row">
                       <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: "#e5e7eb", marginBottom: 2 }}>{n.title}</div>
-                        <div style={{ fontSize: 12, color: "#6b6b8a", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontWeight: 600, color: "#F3EEE4", marginBottom: 2 }}>{n.title}</div>
+                        <div style={{ fontSize: 12, color: "#9C958A", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {n.body}
                         </div>
                       </td>
                       <td style={tdStyle}>
                         {n.target_type === "all" ? (
-                          <span style={{ color: "#9ca3af", fontSize: 13 }}>🌍 الكل</span>
+                          <span style={{ color: "#9C958A", fontSize: 13 }}>🌍 الكل</span>
                         ) : (
                           <span style={{ fontSize: 13 }}>
                             {COUNTRY_FLAG[n.target_country] || "🏳"} {n.target_country}
@@ -557,7 +557,7 @@ export default function NotificationsManager() {
                       <td style={tdStyle}>
                         <StatusBadge status={n.status} />
                       </td>
-                      <td style={{ ...tdStyle, fontSize: 12, color: "#9ca3af", whiteSpace: "nowrap" }}>
+                      <td style={{ ...tdStyle, fontSize: 12, color: "#9C958A", whiteSpace: "nowrap" }}>
                         {timeLabel}
                       </td>
                       <td style={tdStyle}>
@@ -589,7 +589,7 @@ export default function NotificationsManager() {
                                 onClick={() => setConfirmDelete(null)}
                                 style={{
                                   background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-                                  borderRadius: 6, color: "#9ca3af", fontSize: 11,
+                                  borderRadius: 6, color: "#9C958A", fontSize: 11,
                                   fontWeight: 600, padding: "4px 10px", cursor: "pointer",
                                 }}
                               >

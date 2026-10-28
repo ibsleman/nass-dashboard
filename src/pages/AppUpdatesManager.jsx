@@ -192,8 +192,8 @@ export default function AppUpdatesManager() {
 
   // ── styles ────────────────────────────────────────────────────────────────
   const card = {
-    background: "#0f0f1a",
-    border: "1px solid rgba(124,58,237,0.25)",
+    background: "#0E0D0B",
+    border: "1px solid rgba(233,196,106,0.25)",
     borderRadius: 16,
     padding: "20px 24px",
     marginBottom: 16,
@@ -227,7 +227,7 @@ export default function AppUpdatesManager() {
     fontWeight: 600,
     fontSize: 14,
     background:
-      variant === "primary" ? "#7c3aed"
+      variant === "primary" ? "#8A6416"
       : variant === "danger" ? "#ef4444"
       : "#f3f4f6",
     color: variant === "ghost" ? "#374151" : "#fff",
@@ -237,7 +237,7 @@ export default function AppUpdatesManager() {
     iso ? new Date(iso).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" }) : "—";
 
   if (loading) return (
-    <div style={{ textAlign: "center", padding: 80, color: "#9ca3af" }}>جارٍ التحميل…</div>
+    <div style={{ textAlign: "center", padding: 80, color: "#9C958A" }}>جارٍ التحميل…</div>
   );
 
   const updateToDelete = confirmDelete ? updates.find((u) => u.id === confirmDelete) : null;
@@ -246,14 +246,14 @@ export default function AppUpdatesManager() {
     <div style={{ maxWidth: 840, margin: "0 auto", padding: "24px 16px", direction: "rtl" }}>
       <style>{`
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-        .update-row:hover{background:rgba(124,58,237,0.06)!important}
+        .update-row:hover{background:rgba(233,196,106,0.06)!important}
       `}</style>
 
       {/* ── Header ── */}
       <div style={{ ...row, marginBottom: 24 }}>
         <div>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>تحديثات التطبيق</h1>
-          <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "#9C958A", marginTop: 4 }}>
             إدارة إشعارات التحديثات الإجبارية والاختيارية
           </div>
         </div>
@@ -268,13 +268,13 @@ export default function AppUpdatesManager() {
       {/* ── Add Form ── */}
       {showForm && (
         <div style={{
-          background: "#0f0f1a",
-          border: "1px solid rgba(124,58,237,0.4)",
+          background: "#0E0D0B",
+          border: "1px solid rgba(233,196,106,0.4)",
           borderRadius: 16,
           padding: "24px 28px",
           marginBottom: 24,
           animation: "fadeIn .2s ease",
-          boxShadow: "0 0 0 1px rgba(124,58,237,0.15), 0 8px 32px rgba(0,0,0,0.5)",
+          boxShadow: "0 0 0 1px rgba(233,196,106,0.15), 0 8px 32px rgba(0,0,0,0.5)",
         }}>
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: "#fff" }}>نشر تحديث جديد</div>
           <div style={{ display: "grid", gap: 16 }}>
@@ -282,11 +282,11 @@ export default function AppUpdatesManager() {
             {/* Version + Title */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 12 }}>
               <div>
-                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>رقم الإصدار *</label>
+                <label style={{ fontSize: 13, color: "#9C958A", fontWeight: 500, marginBottom: 7, display: "block" }}>رقم الإصدار *</label>
                 <input
                   style={{
                     width: "100%", padding: "10px 13px",
-                    background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)",
+                    background: "#1A1815", border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 10, fontSize: 14, outline: "none",
                     boxSizing: "border-box", fontFamily: "inherit",
                     color: "#fff", transition: "border-color .15s",
@@ -294,16 +294,16 @@ export default function AppUpdatesManager() {
                   value={form.version}
                   onChange={(e) => setForm({ ...form, version: e.target.value })}
                   placeholder="1.0.0"
-                  onFocus={(e) => e.target.style.borderColor = "rgba(124,58,237,0.6)"}
+                  onFocus={(e) => e.target.style.borderColor = "rgba(233,196,106,0.6)"}
                   onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
                 />
               </div>
               <div>
-                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>عنوان التحديث *</label>
+                <label style={{ fontSize: 13, color: "#9C958A", fontWeight: 500, marginBottom: 7, display: "block" }}>عنوان التحديث *</label>
                 <input
                   style={{
                     width: "100%", padding: "10px 13px",
-                    background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)",
+                    background: "#1A1815", border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 10, fontSize: 14, outline: "none",
                     boxSizing: "border-box", fontFamily: "inherit",
                     color: "#fff", transition: "border-color .15s",
@@ -311,7 +311,7 @@ export default function AppUpdatesManager() {
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="ما الجديد في هذا الإصدار؟"
-                  onFocus={(e) => e.target.style.borderColor = "rgba(124,58,237,0.6)"}
+                  onFocus={(e) => e.target.style.borderColor = "rgba(233,196,106,0.6)"}
                   onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
                 />
               </div>
@@ -319,11 +319,11 @@ export default function AppUpdatesManager() {
 
             {/* Message */}
             <div>
-              <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>رسالة / وصف</label>
+              <label style={{ fontSize: 13, color: "#9C958A", fontWeight: 500, marginBottom: 7, display: "block" }}>رسالة / وصف</label>
               <textarea
                 style={{
                   width: "100%", padding: "10px 13px", minHeight: 90, resize: "vertical", lineHeight: 1.6,
-                  background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)",
+                  background: "#1A1815", border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 10, fontSize: 14, outline: "none",
                   boxSizing: "border-box", fontFamily: "inherit",
                   color: "#fff", transition: "border-color .15s",
@@ -331,7 +331,7 @@ export default function AppUpdatesManager() {
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
                 placeholder="اكتب تفاصيل التحديث هنا…"
-                onFocus={(e) => e.target.style.borderColor = "rgba(124,58,237,0.6)"}
+                onFocus={(e) => e.target.style.borderColor = "rgba(233,196,106,0.6)"}
                 onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
               />
             </div>
@@ -340,7 +340,7 @@ export default function AppUpdatesManager() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Image upload */}
               <div>
-                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>صورة التحديث (اختياري)</label>
+                <label style={{ fontSize: 13, color: "#9C958A", fontWeight: 500, marginBottom: 7, display: "block" }}>صورة التحديث (اختياري)</label>
                 <input
                   ref={imageInputRef}
                   type="file"
@@ -353,9 +353,9 @@ export default function AppUpdatesManager() {
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                     padding: "10px 16px", borderRadius: 10, cursor: uploading ? "not-allowed" : "pointer",
-                    border: "1px dashed rgba(124,58,237,0.5)",
-                    background: form.image_url ? "rgba(124,58,237,0.08)" : "rgba(255,255,255,0.03)",
-                    color: form.image_url ? "#a78bfa" : "#a0a0b0",
+                    border: "1px dashed rgba(233,196,106,0.5)",
+                    background: form.image_url ? "rgba(233,196,106,0.08)" : "rgba(255,255,255,0.03)",
+                    color: form.image_url ? "#E9C46A" : "#9C958A",
                     fontSize: 13, fontWeight: 500, transition: "all .15s",
                   }}
                 >
@@ -371,17 +371,17 @@ export default function AppUpdatesManager() {
                   <img
                     src={form.image_url}
                     alt="preview"
-                    style={{ marginTop: 8, height: 60, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(124,58,237,0.3)" }}
+                    style={{ marginTop: 8, height: 60, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(233,196,106,0.3)" }}
                   />
                 )}
               </div>
 
               {/* Type */}
               <div>
-                <label style={{ fontSize: 13, color: "#a0a0b0", fontWeight: 500, marginBottom: 7, display: "block" }}>نوع التحديث</label>
+                <label style={{ fontSize: 13, color: "#9C958A", fontWeight: 500, marginBottom: 7, display: "block" }}>نوع التحديث</label>
                 <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                   {[
-                    { value: "optional", label: "اختياري", activeColor: "#7c3aed", activeBg: "rgba(124,58,237,0.15)" },
+                    { value: "optional", label: "اختياري", activeColor: "#8A6416", activeBg: "rgba(233,196,106,0.15)" },
                     { value: "forced",   label: "إجباري",   activeColor: "#ef4444", activeBg: "rgba(239,68,68,0.12)" },
                   ].map(({ value, label, activeColor, activeBg }) => {
                     const isSelected = form.update_type === value;
@@ -421,7 +421,7 @@ export default function AppUpdatesManager() {
               style={{
                 padding: "9px 20px", borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: "pointer",
                 background: "transparent", border: "1px solid rgba(255,255,255,0.15)",
-                color: "#a0a0b0", transition: "all .15s",
+                color: "#9C958A", transition: "all .15s",
               }}
             >
               إلغاء
@@ -431,10 +431,10 @@ export default function AppUpdatesManager() {
               disabled={saving || uploading}
               style={{
                 padding: "9px 22px", borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: saving || uploading ? "not-allowed" : "pointer",
-                background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                background: "linear-gradient(135deg, #8A6416, #775612)",
                 border: "none", color: "#fff",
                 opacity: saving || uploading ? 0.65 : 1,
-                boxShadow: saving || uploading ? "none" : "0 4px 14px rgba(124,58,237,0.4)",
+                boxShadow: saving || uploading ? "none" : "0 4px 14px rgba(233,196,106,0.4)",
                 transition: "all .15s",
               }}
             >
@@ -449,7 +449,7 @@ export default function AppUpdatesManager() {
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: "#fff" }}>
           سجل التحديثات
         </div>
-        <div style={{ fontSize: 13, color: "#6b6b8a", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, color: "#9C958A", marginBottom: 16 }}>
           {updates.length} تحديث — تحديث واحد فقط يكون نشطاً في نفس الوقت
         </div>
 
@@ -467,7 +467,7 @@ export default function AppUpdatesManager() {
               padding: "8px 12px",
               fontSize: 12,
               fontWeight: 700,
-              color: "#6b6b8a",
+              color: "#9C958A",
               borderBottom: "1px solid rgba(255,255,255,0.07)",
             }}>
               <span>الإصدار</span>
@@ -495,8 +495,8 @@ export default function AppUpdatesManager() {
               >
                 {/* Version */}
                 <div style={{
-                  fontSize: 13, fontWeight: 700, color: "#a78bfa",
-                  background: "rgba(124,58,237,0.18)", padding: "3px 8px",
+                  fontSize: 13, fontWeight: 700, color: "#E9C46A",
+                  background: "rgba(233,196,106,0.18)", padding: "3px 8px",
                   borderRadius: 6, textAlign: "center", width: "fit-content",
                 }}>
                   {update.version}
@@ -504,12 +504,12 @@ export default function AppUpdatesManager() {
 
                 {/* Title + message */}
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "#e5e7eb", marginBottom: 2 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "#F3EEE4", marginBottom: 2 }}>
                     {update.title}
                   </div>
                   {update.message && (
                     <div style={{
-                      fontSize: 12, color: "#9ca3af",
+                      fontSize: 12, color: "#9C958A",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {update.message}
@@ -525,7 +525,7 @@ export default function AppUpdatesManager() {
                 </div>
 
                 {/* Date */}
-                <div style={{ fontSize: 12, color: "#9ca3af" }}>
+                <div style={{ fontSize: 12, color: "#9C958A" }}>
                   {formatDate(update.created_at)}
                 </div>
 
@@ -561,9 +561,9 @@ export default function AppUpdatesManager() {
         }}>
           <div style={{ ...card, maxWidth: 380, margin: 0, animation: "fadeIn .2s ease" }}>
             <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: "#fff" }}>حذف التحديث؟</div>
-            <div style={{ color: "#a0a0b0", fontSize: 14, marginBottom: 20 }}>
+            <div style={{ color: "#9C958A", fontSize: 14, marginBottom: 20 }}>
               سيتم حذف الإصدار{" "}
-              <strong style={{ color: "#a78bfa" }}>{updateToDelete?.version}</strong>{" "}
+              <strong style={{ color: "#E9C46A" }}>{updateToDelete?.version}</strong>{" "}
               ("{updateToDelete?.title}") نهائياً.
             </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
@@ -571,7 +571,7 @@ export default function AppUpdatesManager() {
                 onClick={() => setConfirmDelete(null)}
                 style={{
                   padding: "8px 18px", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer",
-                  background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#a0a0b0",
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#9C958A",
                 }}
               >
                 إلغاء

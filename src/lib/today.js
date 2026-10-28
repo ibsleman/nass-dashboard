@@ -44,6 +44,9 @@ const PLURALS = {
   template: { one: 'قالب واحد', two: 'قالبان', few: 'قوالب', many: 'قالباً', other: 'قالب', zero: 'لا قوالب' },
   occasion: { one: 'مناسبة واحدة', two: 'مناسبتان', few: 'مناسبات', many: 'مناسبة', other: 'مناسبة', zero: 'لا مناسبات' },
   thumbnail: { one: 'مصغّرة واحدة', two: 'مصغّرتان', few: 'مصغّرات', many: 'مصغّرة', other: 'مصغّرة', zero: 'لا مصغّرات' },
+  device: { one: 'جهاز واحد', two: 'جهازان', few: 'أجهزة', many: 'جهازاً', other: 'جهاز', zero: 'لا أجهزة' },
+  // بعد «بعد»: مجرور — «بعد ثانيتين»، «بعد 5 ثوانٍ»
+  second: { one: 'ثانية واحدة', two: 'ثانيتين', few: 'ثوانٍ', many: 'ثانية', other: 'ثانية', zero: 'لا ثوانٍ' },
 }
 
 /** العدد العربي بأرقام لاتينية (قرار التطبيق): 1، 2، 3–10، 11–99، 100+ بحسب آخر خانتين */
@@ -53,9 +56,10 @@ export function countAr(n, noun) {
   if (n === 1) return f.one
   if (n === 2) return f.two
   const r = n % 100
-  if (r >= 3 && r <= 10) return `${n} ${f.few}`
-  if (r >= 11 && r <= 99) return `${n} ${f.many}`
-  return `${n} ${f.other}`
+  const num = n.toLocaleString('en-US')
+  if (r >= 3 && r <= 10) return `${num} ${f.few}`
+  if (r >= 11 && r <= 99) return `${num} ${f.many}`
+  return `${num} ${f.other}`
 }
 
 export function countdown(days) {
@@ -109,7 +113,7 @@ export function inboxItems({ overview, seasons, studioDrafts = 0, failedPush = 0
     items.push({
       id: 'names',
       title: `${countAr(unplaced.length, 'template')} بلا مكان للاسم`,
-      detail: 'التطبيق يخمّن المكان الآن. ضعه بنفسك وتأخذه الأجوال في المزامنة التالية.',
+      detail: 'التطبيق يخمّن المكان الآن. ضعه بنفسك وتأخذه الأجهزة في المزامنة التالية.',
       action: { label: 'ابدأ', to: '/templates/place' },
       covers: unplaced.map(coverOf).filter(Boolean).slice(0, 3),
     })

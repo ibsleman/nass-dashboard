@@ -104,11 +104,12 @@ export function bestWindow(hours) {
   return { start, end: (start + 2) % 24, share: total ? Math.round((best / total) * 100) : 0, opens }
 }
 
+/** جزء اليوم كما يُقال بعد الساعة */
+export const dayPart = (h) => (h < 5 ? 'ليلاً' : h < 12 ? 'صباحاً' : h < 15 ? 'ظهراً' : h < 18 ? 'عصراً' : 'مساءً')
+
 /** الساعة كما تُقال: 8 مساءً، 9 صباحاً، 12 ظهراً */
 export function hourLabel(h) {
-  const n = h % 12 || 12
-  const part = h < 5 ? 'ليلاً' : h < 12 ? 'صباحاً' : h < 15 ? 'ظهراً' : h < 18 ? 'عصراً' : 'مساءً'
-  return `${n} ${part}`
+  return `${h % 12 || 12} ${dayPart(h)}`
 }
 
 const versionKey = (v) => v.split('.').map((x) => parseInt(x, 10) || 0)

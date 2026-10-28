@@ -1,7 +1,6 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router-dom'
-import LegacyRoom from '../components/LegacyRoom'
-import NotificationsManager from './NotificationsManager'
-import AppUpdatesManager from './AppUpdatesManager'
+import NotificationsTab from './reach/NotificationsTab'
+import UpdateTab from './reach/UpdateTab'
 
 // «التواصل»: كل ما يصل المستخدم من خارج القوالب — الإشعارات ورسالة التحديث داخل التطبيق
 function Tab({ to, children }) {
@@ -21,19 +20,19 @@ function Tab({ to, children }) {
 
 export default function ReachPage() {
   return (
-    <LegacyRoom>
-      <div className="mx-auto grid max-w-[1400px] gap-2 px-4 pt-6 md:px-8">
+    <div className="mx-auto grid max-w-[1400px] grid-cols-[minmax(0,1fr)] gap-6 px-4 py-6 md:px-8">
+      <header className="grid gap-2">
         <h1 className="text-[30px] font-extrabold leading-tight">التواصل</h1>
         <nav className="flex gap-6 border-b border-hair" aria-label="أقسام التواصل">
           <Tab to="notifications">الإشعارات</Tab>
           <Tab to="update">رسالة التحديث</Tab>
         </nav>
-      </div>
+      </header>
       <Routes>
         <Route index element={<Navigate to="notifications" replace />} />
-        <Route path="notifications" element={<NotificationsManager />} />
-        <Route path="update" element={<AppUpdatesManager />} />
+        <Route path="notifications" element={<NotificationsTab />} />
+        <Route path="update" element={<UpdateTab />} />
       </Routes>
-    </LegacyRoom>
+    </div>
   )
 }

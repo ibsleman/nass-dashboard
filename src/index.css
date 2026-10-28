@@ -68,6 +68,23 @@ html, body {
   }
 }
 
+@layer components {
+  /* حقل الإدخال الواحد في الصفحات الجديدة (التواصل والدخل) */
+  .field {
+    @apply w-full rounded-field border border-hair bg-surface px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-3;
+    min-height: 52px;
+  }
+  textarea.field {
+    @apply py-3 leading-relaxed;
+  }
+  .field:focus {
+    border-color: rgb(var(--c-gold) / 0.7);
+  }
+  .field-label {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink-2;
+  }
+}
+
 @layer utilities {
   .border-hair {
     border-color: rgb(var(--c-hair) / var(--hair-alpha));

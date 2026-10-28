@@ -14,7 +14,17 @@ const SLOP = 12
 const TAP_MS = 300
 const POP = { type: 'spring', stiffness: 385, damping: 27.5, mass: 1 }
 
-export default function HoldButton({ label, onConfirm, disabled = false, compact = false, className = '' }) {
+const TONES = {
+  warn: { text: 'text-warn', fill: 'bg-warn/[0.14]', border: 'border-hair' },
+  // الإرسال: نفس الجسدية بالذهبي الواحد — فعل نحو الناس لا يُتراجع عنه
+  gold: { text: 'text-gold', fill: 'bg-gold/[0.18]', border: 'border-gold/45' },
+}
+
+export default function HoldButton({
+  label, onConfirm, disabled = false, compact = false, className = '',
+  tone = 'warn', hint: hintText = 'اضغط مطوّلاً للحذف', working = 'يُحذف…', verb = 'اضغط مطوّلاً',
+}) {
+  const t = TONES[tone]
   const ref = useRef(null)
   const progress = useMotionValue(0)
   const width = useTransform(progress, (p) => `${p * 100}%`)
@@ -92,7 +102,7 @@ export default function HoldButton({ label, onConfirm, disabled = false, compact
         ref={ref}
         type="button"
         disabled={disabled}
-        aria-label={`${label} — اضغط مطوّلاً`}
+        aria-label={`${label} — ${verb}`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={release}
@@ -102,13 +112,13 @@ export default function HoldButton({ label, onConfirm, disabled = false, compact
         onKeyUp={onKeyUp}
         onClick={(e) => e.stopPropagation()}
         onContextMenu={(e) => e.preventDefault()}
-        className={`relative isolate w-full select-none overflow-hidden border border-hair bg-surface font-semibold text-warn touch-none disabled:opacity-45 ${
+        className={`relative isolate w-full select-none overflow-hidden border ${t.border} bg-surface font-semibold ${t.text} touch-none disabled:opacity-45 ${
           compact ? 'min-h-9 rounded-[10px] px-3 text-[12px]' : 'min-h-[52px] rounded-field px-4 text-[15px]'
         }`}
       >
         {/* الامتلاء يبدأ من أول السطر العربي (يمين الزر) */}
-        <motion.span aria-hidden className="absolute inset-y-0 start-0 -z-10 bg-warn/[0.14]" style={{ width }} />
-        <span className="relative">{state === 'working' ? 'يُحذف…' : label}</span>
+        <motion.span aria-hidden className={`absolute inset-y-0 start-0 -z-10 ${t.fill}`} style={{ width }} />
+        <span className="relative">{state === 'working' ? working : label}</span>
       </button>
       <span className="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-20 -translate-x-1/2">
         <AnimatePresence>
@@ -122,7 +132,7 @@ export default function HoldButton({ label, onConfirm, disabled = false, compact
               exit={{ opacity: 0, y: 4 }}
               transition={POP}
             >
-              اضغط مطوّلاً للحذف
+              {hintText}
             </motion.span>
           )}
         </AnimatePresence>

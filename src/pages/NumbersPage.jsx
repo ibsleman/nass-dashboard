@@ -179,7 +179,7 @@ function BestTime({ hours }) {
           <div className="mt-1.5 flex justify-between text-[11px] text-ink-3">
             <span>12 ليلاً</span><span>6 صباحاً</span><span>12 ظهراً</span><span>6 مساءً</span><span>11 مساءً</span>
           </div>
-          <Link to="/reach/notifications" className="mt-4 inline-grid min-h-10 place-items-center rounded-full border border-hair px-4 text-[13px] font-semibold hover:border-gold hover:text-gold">
+          <Link to="/reach/notifications?when=best" className="mt-4 inline-grid min-h-10 place-items-center rounded-full border border-hair px-4 text-[13px] font-semibold hover:border-gold hover:text-gold">
             أرسل إشعاراً
           </Link>
         </>

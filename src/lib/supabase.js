@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { getCdnUrl } from './cdn'
+import { getCdnUrl, extractStoragePath } from './cdn'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -164,10 +164,18 @@ export function fetchStudioDraftCount() {
   return headCount(supabase.from('design_templates').select('id', { count: 'exact', head: true }).eq('status', 'draft'))
 }
 
-export function fetchFailedPushCount(now = new Date()) {
+/** إشعارات الأسبوع التي لم تصل: فشلت، أو فات موعدها وهي تنتظر (لم يرسلها أحد) */
+export async function fetchFailedPushCount(now = new Date()) {
   const from = startOfDay(now); from.setDate(from.getDate() - 7)
-  return headCount(supabase.from('push_notifications').select('id', { count: 'exact', head: true })
-    .eq('status', 'failed').gte('created_at', from.toISOString()))
+  const late = new Date(now.getTime() - 3 * 60e3).toISOString()
+  const [failed, stuck] = await Promise.all([
+    headCount(supabase.from('push_notifications').select('id', { count: 'exact', head: true })
+      .eq('status', 'failed').gte('created_at', from.toISOString())),
+    headCount(supabase.from('push_notifications').select('id', { count: 'exact', head: true })
+      .in('status', ['pending', 'scheduled']).gte('created_at', from.toISOString())
+      .or(`scheduled_at.lt.${late},and(scheduled_at.is.null,created_at.lt.${late})`)),
+  ])
+  return failed + stuck
 }
 
 // ─── «الأرقام» (ملخصات القاعدة: migration 20261029010000_admin_stats) ─────────
@@ -254,4 +262,132 @@ export async function uploadUpdateImage(file) {
   if (error) throw error
   const { data } = supabase.storage.from('updates').getPublicUrl(fileName)
   return getCdnUrl(data.publicUrl)
+}
+
+// ─── «التواصل»: الإشعارات ────────────────────────────────────────────────────
+
+export async function fetchNotifications(limit = 60) {
+  const { data, error } = await supabase.from('push_notifications').select('*')
+    .order('created_at', { ascending: false }).limit(limit)
+  if (error) throw error
+  return data
+}
+
+/** الأجهزة المسجّلة للإشعارات: الكل ولكل دولة */
+export async function fetchAudienceCounts() {
+  const rows = await pageAll(() => supabase.from('device_tokens').select('country_code').eq('is_active', true).order('id'))
+  const counts = { all: rows.length }
+  for (const r of rows) if (r.country_code) counts[r.country_code] = (counts[r.country_code] ?? 0) + 1
+  return counts
+}
+
+export async function createNotification(payload) {
+  const { data, error } = await supabase.from('push_notifications').insert(payload).select().single()
+  if (error) throw error
+  return data
+}
+
+/** يرسل الآن بجلسة المشرف — دالة الإرسال في الخادم تتحقق أنه مشرف */
+export async function sendNotification(id) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}`, apikey: supabaseAnonKey },
+    body: JSON.stringify({ notification_id: id }),
+  })
+  // fetch لا يرمي على 401/500 — بدون هذا يبقى الإشعار «يُرسل» بلا سبب
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || `HTTP ${res.status}`)
+  }
+}
+
+/** فشل الاتصال بدالة الإرسال قبل أن تبدأ ⇒ يُسجَّل السبب في الصف كي لا يبقى «في الانتظار» بلا تفسير */
+export async function markNotificationFailed(id, message) {
+  await supabase.from('push_notifications').update({ status: 'failed', error_message: message, updated_at: new Date().toISOString() })
+    .eq('id', id).eq('status', 'pending')
+}
+
+export async function deleteNotification(id) {
+  const { error } = await supabase.from('push_notifications').delete().eq('id', id)
+  if (error) throw error
+}
+
+/** هل يرسل الخادم المجدولة بنفسه؟ null = التحديث لم يُشغَّل في القاعدة بعد */
+export async function fetchSchedulerReady() {
+  try {
+    return await rpc('push_scheduler_ready')
+  } catch (e) {
+    if (e instanceof StatsNeedUpdate) return null
+    throw e
+  }
+}
+
+/** ساعات فتح التطبيق وإصداراته في آخر `days` يوماً — لأفضل وقت ولمن سيرى رسالة التحديث */
+export async function fetchReachStats(days = 30, now = new Date()) {
+  const from = startOfDay(now); from.setDate(from.getDate() - (days - 1))
+  const range = { p_from: from.toISOString(), p_to: now.toISOString() }
+  const [hours, versions] = await Promise.all([
+    rpc('admin_stats_hours', { ...range, p_tz: TZ }),
+    rpc('admin_stats_versions', range),
+  ])
+  return { hours, versions }
+}
+
+// ─── «الدخل»: الإعلانات ──────────────────────────────────────────────────────
+
+export async function fetchAdsSettings() {
+  const { data, error } = await supabase.from('ads_settings').select('*').eq('id', 1).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function saveAdsSettings(patch) {
+  const { data, error } = await supabase.from('ads_settings')
+    .upsert({ id: 1, ...patch, updated_at: new Date().toISOString() }).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function fetchCustomAds() {
+  const { data, error } = await supabase.from('custom_ads').select('*')
+    .order('priority', { ascending: false }).order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+/** الإعلان الذي يراه التطبيق الآن — من العرض نفسه الذي يقرؤه التطبيق */
+export async function fetchLiveAdId() {
+  const { data, error } = await supabase.from('active_custom_ad_now').select('id').maybeSingle()
+  if (error) throw error
+  return data?.id ?? null
+}
+
+export async function saveCustomAd(payload, id) {
+  const q = id
+    ? supabase.from('custom_ads').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id)
+    : supabase.from('custom_ads').insert(payload)
+  const { data, error } = await q.select().single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteCustomAd(ad) {
+  const { error } = await supabase.from('custom_ads').delete().eq('id', ad.id)
+  if (error) throw error
+  const files = [ad.image_url, ad.video_url].map((u) => extractStoragePath(u, 'ads')).filter(Boolean)
+  if (files.length) await supabase.storage.from('ads').remove(files)
+}
+
+export async function uploadAdMedia(file) {
+  const kind = file.type.startsWith('video/') ? 'videos' : 'images'
+  const ext = file.name.split('.').pop()
+  const path = `${kind}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+  const { error } = await supabase.storage.from('ads').upload(path, file, { cacheControl: '3600', upsert: false })
+  if (error) throw error
+  return getCdnUrl(supabase.storage.from('ads').getPublicUrl(path).data.publicUrl)
+}
+
+export function fetchSubscribers() {
+  return rpc('admin_stats_subscribers')
 }

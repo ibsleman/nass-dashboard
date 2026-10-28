@@ -7,6 +7,7 @@ import LegacyRoom from './components/LegacyRoom'
 import TemplatesPage from './pages/templates/TemplatesPage'
 import ReachPage from './pages/ReachPage'
 import SettingsPage from './pages/SettingsPage'
+import TodayPage from './pages/TodayPage'
 import AdsManager from './pages/AdsManager'
 import AnalyticsPage from './pages/AnalyticsPage'
 
@@ -28,14 +29,14 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/" element={<PrivateRoute><Shell /></PrivateRoute>}>
-              {/* «اليوم» في المرحلة الثانية؛ حتى ذلك تفتح اللوحة على القوالب */}
-              <Route index element={<Navigate to="/templates" replace />} />
+              <Route index element={<Navigate to="/today" replace />} />
+              <Route path="today" element={<TodayPage />} />
               <Route path="templates/*" element={<TemplatesPage />} />
               <Route path="numbers" element={<LegacyRoom><AnalyticsPage /></LegacyRoom>} />
               <Route path="reach/*" element={<ReachPage />} />
               <Route path="income" element={<LegacyRoom><AdsManager /></LegacyRoom>} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/templates" replace />} />
+              <Route path="*" element={<Navigate to="/today" replace />} />
             </Route>
           </Routes>
         </BrowserRouter>

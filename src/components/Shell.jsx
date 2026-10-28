@@ -1,8 +1,8 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 // القائمة على قدر عمل المدير لا على جداول قاعدة البيانات (G1 الداش بورد).
-// «اليوم» يأتي في المرحلة الثانية — لا مكان في القائمة لصفحة لم تُبنَ بعد.
 export const PLACES = [
+  { to: '/today', label: 'اليوم' },
   { to: '/templates', label: 'القوالب' },
   { to: '/numbers', label: 'الأرقام' },
   { to: '/reach', label: 'التواصل' },
@@ -80,7 +80,7 @@ export default function Shell() {
       </div>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-hair bg-surface px-1 pb-[max(8px,env(safe-area-inset-bottom))] pt-1 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-hair bg-surface px-1 pb-[max(8px,env(safe-area-inset-bottom))] pt-1 md:hidden"
         aria-label="أقسام اللوحة"
       >
         {[...PLACES, SETTINGS].map((p) => <TabLink key={p.to} {...p} />)}

@@ -105,6 +105,71 @@ export async function deleteTemplates(ids) {
   if (error) throw error
 }
 
+// ─── «اليوم» ─────────────────────────────────────────────────────────────────
+
+const EXPORT_EVENTS = ['template_saved', 'template_shared']
+const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
+
+/** الخادم يعيد 1000 صف في الطلب — تُجلب صفحة بعد صفحة حتى `cap` */
+async function pageAll(build, cap = 20000) {
+  const all = []
+  for (let from = 0; from < cap; from += 1000) {
+    const { data, error } = await build().range(from, from + 999)
+    if (error) throw error
+    all.push(...data)
+    if (data.length < 1000) break
+  }
+  return all
+}
+
+async function headCount(query) {
+  const { count, error } = await query
+  if (error) throw error
+  return count ?? 0
+}
+
+/** التصدير (حفظ + مشاركة) لكل يوم من آخر `days` يوماً، الأقدم أولاً واليوم آخراً */
+export async function fetchExportSeries(days = 15, now = new Date()) {
+  const today = startOfDay(now)
+  return Promise.all(Array.from({ length: days }, (_, i) => {
+    const from = new Date(today); from.setDate(today.getDate() - (days - 1 - i))
+    const to = new Date(from); to.setDate(from.getDate() + 1)
+    return headCount(supabase.from('analytics_events').select('id', { count: 'exact', head: true })
+      .in('event_name', EXPORT_EVENTS).gte('created_at', from.toISOString()).lt('created_at', to.toISOString()))
+  }))
+}
+
+/** معرّفات القوالب المصدَّرة في آخر 7 أيام — للأكثر تصديراً */
+export async function fetchWeekExportIds(now = new Date()) {
+  const from = startOfDay(now); from.setDate(from.getDate() - 7)
+  const rows = await pageAll(() => supabase.from('analytics_events').select('template_id')
+    .in('event_name', EXPORT_EVENTS).gte('created_at', from.toISOString()).order('created_at', { ascending: false }))
+  return rows.map((r) => r.template_id)
+}
+
+/** الأجهزة التي فتحت التطبيق اليوم (جلسات بلا تكرار الجهاز) */
+export async function fetchTodayDevices(now = new Date()) {
+  const rows = await pageAll(() => supabase.from('user_sessions').select('device_id')
+    .gte('created_at', startOfDay(now).toISOString()).order('created_at', { ascending: false }))
+  return rows
+}
+
+/** مشتركو «نصّ المميز» الفعليون (لا Sandbox) */
+export function fetchActiveSubscribers() {
+  return headCount(supabase.from('entitlements').select('id', { count: 'exact', head: true })
+    .in('status', ['active', 'grace']).eq('environment', 'production'))
+}
+
+export function fetchStudioDraftCount() {
+  return headCount(supabase.from('design_templates').select('id', { count: 'exact', head: true }).eq('status', 'draft'))
+}
+
+export function fetchFailedPushCount(now = new Date()) {
+  const from = startOfDay(now); from.setDate(from.getDate() - 7)
+  return headCount(supabase.from('push_notifications').select('id', { count: 'exact', head: true })
+    .eq('status', 'failed').gte('created_at', from.toISOString()))
+}
+
 // ─── App Updates ─────────────────────────────────────────────────────────────
 
 export async function fetchAppUpdates() {

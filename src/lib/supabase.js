@@ -170,6 +170,37 @@ export function fetchFailedPushCount(now = new Date()) {
     .eq('status', 'failed').gte('created_at', from.toISOString()))
 }
 
+// ─── «الأرقام» (ملخصات القاعدة: migration 20261029010000_admin_stats) ─────────
+
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Riyadh'
+
+/** دالة الملخص غير موجودة بعد في القاعدة ⇒ اللوحة تطلب التحديث بدل رسالة خطأ */
+export class StatsNeedUpdate extends Error {}
+
+async function rpc(name, args = {}) {
+  const { data, error } = await supabase.rpc(name, args)
+  if (error) {
+    if (error.code === 'PGRST202' || /Could not find the function/i.test(error.message)) throw new StatsNeedUpdate(name)
+    throw error
+  }
+  return data
+}
+
+/** كل ملخصات فترة واحدة + مجاميع الفترة السابقة للمقارنة */
+export async function fetchStats({ from, to, prevFrom, prevTo }) {
+  const range = { p_from: from.toISOString(), p_to: to.toISOString() }
+  const [totals, prev, daily, templates, hours, versions, subscribers] = await Promise.all([
+    rpc('admin_stats_totals', range),
+    rpc('admin_stats_totals', { p_from: prevFrom.toISOString(), p_to: prevTo.toISOString() }),
+    rpc('admin_stats_daily', { ...range, p_tz: TZ }),
+    rpc('admin_stats_templates', range),
+    rpc('admin_stats_hours', { ...range, p_tz: TZ }),
+    rpc('admin_stats_versions', range),
+    rpc('admin_stats_subscribers'),
+  ])
+  return { totals: totals[0], prev: prev[0], daily, templates, hours, versions, subscribers }
+}
+
 // ─── App Updates ─────────────────────────────────────────────────────────────
 
 export async function fetchAppUpdates() {

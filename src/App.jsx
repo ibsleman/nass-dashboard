@@ -9,7 +9,7 @@ import ReachPage from './pages/ReachPage'
 import SettingsPage from './pages/SettingsPage'
 import TodayPage from './pages/TodayPage'
 import AdsManager from './pages/AdsManager'
-import AnalyticsPage from './pages/AnalyticsPage'
+import NumbersPage from './pages/NumbersPage'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -32,7 +32,7 @@ export default function App() {
               <Route index element={<Navigate to="/today" replace />} />
               <Route path="today" element={<TodayPage />} />
               <Route path="templates/*" element={<TemplatesPage />} />
-              <Route path="numbers" element={<LegacyRoom><AnalyticsPage /></LegacyRoom>} />
+              <Route path="numbers" element={<NumbersPage />} />
               <Route path="reach/*" element={<ReachPage />} />
               <Route path="income" element={<LegacyRoom><AdsManager /></LegacyRoom>} />
               <Route path="settings" element={<SettingsPage />} />

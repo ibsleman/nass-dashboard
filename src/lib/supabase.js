@@ -414,3 +414,30 @@ export async function showCategory(id) {
   if (error) throw error
 }
 
+
+// ─── رفوف الرئيسية («رائج اليوم» و«جديدنا») ──────────────────────────────────
+
+/** حالة رف: وضعه وقوائمه، والرف كما يظهر في التطبيق الآن (مع سبب كل قالب ونقاطه) */
+export async function fetchHomeShelf(shelf) {
+  const [mode, items, preview] = await Promise.all([
+    supabase.from('home_shelves').select('mode').eq('key', shelf).single(),
+    supabase.from('home_shelf_items').select('kind, template_id, position').eq('shelf', shelf),
+    supabase.rpc('admin_home_shelf_preview', { p_shelf: shelf }),
+  ])
+  const failed = [mode, items, preview].find((r) => r.error)
+  if (failed) throw failed.error
+  return { state: { mode: mode.data.mode, items: items.data ?? [] }, preview: preview.data ?? [] }
+}
+
+/** كل ما يمكن أن يظهر في الرفوف، الأحدث أولاً، مع الاسم والصورة والنقاط */
+export async function fetchHomeShelfCatalog() {
+  const { data, error } = await supabase.rpc('admin_home_shelf_catalog')
+  if (error) throw error
+  return data ?? []
+}
+
+/** يحفظ حالة الرف كاملة دفعة واحدة — الفعل وتراجعه بالطريقة نفسها */
+export async function saveHomeShelf(shelf, state) {
+  const { error } = await supabase.rpc('admin_set_home_shelf', { p_shelf: shelf, p_mode: state.mode, p_items: state.items })
+  if (error) throw error
+}

@@ -6,8 +6,9 @@ import Library from './Library'
 import ThumbnailsBackfill from '../../components/ThumbnailsBackfill'
 import PlacePage from './PlacePage'
 import StudioTemplatesPage from '../StudioTemplatesPage'
+import HomeShelvesPage from './HomeShelvesPage'
 
-// «القوالب»: كل ما يخص القوالب في مكان واحد — المناسبات، قوالب الاستوديو، ووضع الاسم
+// «القوالب»: كل ما يخص القوالب في مكان واحد — رفوف الرئيسية، المناسبات، قوالب الاستوديو، ووضع الاسم
 
 function Tab({ to, children }) {
   return (
@@ -40,6 +41,7 @@ export default function TemplatesPage() {
       <header className="grid gap-4">
         <h1 className="text-[30px] font-extrabold leading-tight">القوالب</h1>
         <nav className="flex gap-6 overflow-x-auto border-b border-hair" aria-label="أقسام القوالب">
+          <Tab to="home">الرئيسية</Tab>
           <Tab to="occasions">المناسبات</Tab>
           <Tab to="studio">قوالب الاستوديو</Tab>
           <Tab to="place">
@@ -56,6 +58,7 @@ export default function TemplatesPage() {
       <Routes>
         <Route index element={<Navigate to="occasions" replace />} />
         <Route path="occasions/:occasion?" element={<Library overview={overview} onChanged={reload} />} />
+        <Route path="home" element={<HomeShelvesPage />} />
         <Route path="studio" element={<StudioTemplatesPage />} />
         <Route path="place" element={<PlacePage overview={overview} onChanged={reload} />} />
       </Routes>
